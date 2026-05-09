@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SME-Eye Operasyon Paneli</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            void: "#050711",
+            panel: "#0b1020",
+            line: "#1f2a44",
+            cyan: "#22d3ee",
+            signal: "#34d399"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-void text-slate-100">
+  <div class="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <header class="flex flex-col gap-4 border-b border-line pb-5 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-[0.28em] text-cyan" data-i18n="subtitle">Otonom KOBİ Operasyonları</p>
+        <h1 class="mt-2 text-3xl font-semibold tracking-normal text-white sm:text-4xl">SME-Eye</h1>
+      </div>
+      <nav class="flex flex-wrap items-center gap-3 text-sm">
+        <select id="languageSelect" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2">
+          <option value="en">EN</option>
+          <option value="tr">TR</option>
+        </select>
+        <button onclick="resetDemoData()" class="rounded-md border border-amber-300/40 px-4 py-2 text-amber-100 transition hover:border-amber-200 hover:bg-amber-300/10" data-i18n="resetDemo">Demo Verisini Yenile</button>
+        <a href="/tracking" class="rounded-md border border-cyan/30 px-4 py-2 text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="customerPortal">Müşteri Portalı</a>
+        <span id="refreshStamp" class="text-slate-400"></span>
+      </nav>
+    </header>
+
+    <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="rounded-lg border border-line bg-panel p-5 shadow-2xl shadow-black/20">
+        <p class="text-sm text-slate-400" data-i18n="totalOrders">Toplam Sipariş</p>
+        <p id="statTotalOrders" class="mt-3 text-3xl font-semibold text-white">{{ stats.total_orders }}</p>
+      </div>
+      <div class="rounded-lg border border-amber-400/30 bg-amber-400/10 p-5 shadow-2xl shadow-black/20">
+        <p class="text-sm text-amber-200" data-i18n="criticalStockAlerts">Kritik Stok Uyarıları</p>
+        <p id="statCriticalStock" class="mt-3 text-3xl font-semibold text-amber-100">{{ stats.critical_stock_alerts }}</p>
+      </div>
+      <div class="rounded-lg border border-rose-400/30 bg-rose-400/10 p-5 shadow-2xl shadow-black/20">
+        <p class="text-sm text-rose-200" data-i18n="delayedShipments">Geciken Gönderiler</p>
+        <p id="statDelayed" class="mt-3 text-3xl font-semibold text-rose-100">{{ stats.delayed_shipments }}</p>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+      <div class="rounded-lg border border-line bg-panel p-5">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-white" data-i18n="orderIntake">Sipariş Girişi</h2>
+          <span class="rounded-full border border-signal/30 bg-signal/10 px-3 py-1 text-xs text-signal">SQLite ORM</span>
+        </div>
+        <form id="createOrderForm" class="mt-5 grid gap-3">
+          <input id="customerName" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Müşteri adı" data-i18n-placeholder="customerName" required>
+          <input id="customerPhone" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Müşteri telefonu" data-i18n-placeholder="customerPhone" required>
+          <select id="productId" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" required>
+            {% for product in products %}
+            <option value="{{ product.id }}">{{ product.name }} · stock {{ product.stock_quantity }}</option>
+            {% endfor %}
+          </select>
+          <button class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan/80" data-i18n="createOrder">Sipariş Oluştur</button>
+        </form>
+      </div>
+
+      <div class="rounded-lg border border-line bg-panel p-5">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-white" data-i18n="operationsConsole">Operasyon Konsolu</h2>
+          <span class="rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs text-cyan">Gemini Agent</span>
+        </div>
+        <div class="mt-5 grid gap-3 md:grid-cols-[120px_1fr]">
+          <input id="opsOrderId" type="number" min="1" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Sipariş ID" data-i18n-placeholder="orderId">
+          <textarea id="qualityNote" rows="3" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Baloncuklu ambalaj yapıldı, kırılır etiketi takıldı, kutu kapatıldı ve etiketlendi." data-i18n-placeholder="qualityNote"></textarea>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <button onclick="fillQualityExample()" class="rounded-md border border-amber-300/40 px-4 py-2 text-sm text-amber-100 transition hover:border-amber-200 hover:bg-amber-300/10" data-i18n="fillExample">Örnek Notu Doldur</button>
+          <button onclick="runQualityCheck()" class="rounded-md bg-signal px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-signal/80" data-i18n="qualityCheck">Kalite Kontrol</button>
+          <button onclick="shipSelectedOrder()" class="rounded-md border border-cyan/30 px-4 py-2 text-sm text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="markShipped">Kargoya Ver</button>
+          <button onclick="simulateDelay()" class="rounded-md border border-rose-400/40 px-4 py-2 text-sm text-rose-200 transition hover:border-rose-300 hover:bg-rose-400/10" data-i18n="simulateDelay">Gecikme Simüle Et</button>
+        </div>
+        <div id="operationResult" class="mt-4 hidden rounded-md border border-line bg-[#070b16] p-4 text-sm text-slate-200"></div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-line bg-panel">
+      <div class="flex flex-col gap-2 border-b border-line p-5 md:flex-row md:items-center md:justify-between">
+        <h2 class="text-lg font-semibold text-white" data-i18n="orders">Siparişler</h2>
+        <p class="text-sm text-slate-400" data-i18n="autoRefresh">Her 5 saniyede otomatik yenilenir</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-line text-left text-sm">
+          <thead class="bg-[#070b16] text-xs uppercase tracking-wider text-slate-400">
+            <tr>
+              <th class="px-5 py-3">ID</th>
+              <th class="px-5 py-3" data-i18n="customer">Müşteri</th>
+              <th class="px-5 py-3" data-i18n="product">Ürün</th>
+              <th class="px-5 py-3" data-i18n="status">Durum</th>
+              <th class="px-5 py-3" data-i18n="token">Token</th>
+              <th class="px-5 py-3" data-i18n="updated">Güncellendi</th>
+              <th class="px-5 py-3" data-i18n="action">Aksiyon</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody" class="divide-y divide-line">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-line bg-panel">
+      <div class="flex items-center justify-between border-b border-line p-5">
+        <h2 class="text-lg font-semibold text-white" data-i18n="recentActivities">Son İşlemler</h2>
+        <span class="text-xs uppercase tracking-[0.22em] text-slate-500" data-i18n="auditTrail">Operasyon Geçmişi</span>
+      </div>
+      <div id="logsBody" class="grid gap-3 p-5"></div>
+    </section>
+  </div>
+
+  <script>
+    const translations = {
+      en: {
+        subtitle: "Autonomous SME Operations",
+        customerPortal: "Customer Portal",
+        resetDemo: "Reset Demo Data",
+        totalOrders: "Total Orders",
+        criticalStockAlerts: "Critical Stock Alerts",
+        delayedShipments: "Delayed Shipments",
+        orderIntake: "Order Intake",
+        customerName: "Customer name",
+        customerPhone: "Customer phone",
+        createOrder: "Create Order",
+        operationsConsole: "Operations Console",
+        orderId: "Order ID",
+        qualityNote: "Wrapped in bubble wrap, fragile sticker attached, box sealed and labeled.",
+        fillExample: "Fill Example Note",
+        qualityCheck: "Quality Check",
+        markShipped: "Mark Shipped",
+        simulateDelay: "Simulate Delay",
+        orders: "Orders",
+        autoRefresh: "Auto-refresh every 5 seconds",
+        customer: "Customer",
+        product: "Product",
+        status: "Status",
+        token: "Token",
+        updated: "Updated",
+        action: "Action",
+        recentActivities: "Recent Actions",
+        auditTrail: "Operation History",
+        stock: "stock",
+        unknown: "Unknown",
+        notIssued: "not issued",
+        select: "Select",
+        copyToken: "Copy Token",
+        openPortal: "Open Portal",
+        tokenCopied: "Delivery token copied.",
+        demoResetDone: "Demo data reset with 10 handmade-food orders.",
+        orderNumber: "Order",
+        nextActionPending: "Next: run quality check.",
+        nextActionApproved: "Next: mark as shipped.",
+        nextActionShipped: "Next: simulate delay or open customer portal.",
+        nextActionDelayed: "Next: open customer portal for delivery, rating, chat, or return.",
+        nextActionDone: "This order is already closed for normal fulfillment.",
+        createdOrder: "Created order",
+        orderIdRequired: "Order ID is required.",
+        qualityRequired: "Order ID and quality note are required.",
+        deliveryToken: "Delivery token",
+        geminiReason: "Gemini reason",
+        packagingAdvice: "Packaging advice",
+        markedShipped: "marked SHIPPED"
+      },
+      tr: {
+        subtitle: "Otonom KOBİ Operasyonları",
+        customerPortal: "Müşteri Portalı",
+        resetDemo: "Demo Verisini Yenile",
+        totalOrders: "Toplam Sipariş",
+        criticalStockAlerts: "Kritik Stok Uyarıları",
+        delayedShipments: "Geciken Gönderiler",
+        orderIntake: "Sipariş Girişi",
+        customerName: "Müşteri adı",
+        customerPhone: "Müşteri telefonu",
+        createOrder: "Sipariş Oluştur",
+        operationsConsole: "Operasyon Konsolu",
+        orderId: "Sipariş ID",
+        qualityNote: "Baloncuklu ambalaj yapıldı, kırılır etiketi takıldı, kutu kapatıldı ve etiketlendi.",
+        fillExample: "Örnek Notu Doldur",
+        qualityCheck: "Kalite Kontrol",
+        markShipped: "Kargoya Ver",
+        simulateDelay: "Gecikme Simüle Et",
+        orders: "Siparişler",
+        autoRefresh: "Her 5 saniyede otomatik yenilenir",
+        customer: "Müşteri",
+        product: "Ürün",
+        status: "Durum",
+        token: "Token",
+        updated: "Güncellendi",
+        action: "Aksiyon",
+        recentActivities: "Son İşlemler",
+        auditTrail: "Operasyon Geçmişi",
+        stock: "stok",
+        unknown: "Bilinmiyor",
+        notIssued: "üretilmedi",
+        select: "Seç",
+        copyToken: "Tokeni Kopyala",
+        openPortal: "Portalı Aç",
+        tokenCopied: "Teslimat tokeni kopyalandı.",
+        demoResetDone: "Demo verisi 10 el yapımı gıda siparişiyle yenilendi.",
+        orderNumber: "Sipariş",
+        nextActionPending: "Sıradaki adım: kalite kontrol çalıştır.",
+        nextActionApproved: "Sıradaki adım: kargoya ver.",
+        nextActionShipped: "Sıradaki adım: gecikme simüle et veya müşteri portalını aç.",
+        nextActionDelayed: "Sıradaki adım: teslimat, puanlama, sohbet veya iade için müşteri portalını aç.",
+        nextActionDone: "Bu sipariş normal teslimat akışı için kapanmış durumda.",
+        createdOrder: "Sipariş oluşturuldu",
+        orderIdRequired: "Sipariş ID gerekli.",
+        qualityRequired: "Sipariş ID ve kalite notu gerekli.",
+        deliveryToken: "Teslimat tokeni",
+        geminiReason: "Gemini gerekçesi",
+        packagingAdvice: "Paketleme tavsiyesi",
+        markedShipped: "KARGOYA VERİLDİ olarak işaretlendi"
+      }
+    };
+
+    let dashboardData = {{ {"orders": orders, "logs": logs, "activities": activities, "products": products, "stats": stats} | tojson }};
+    let currentLanguage = localStorage.getItem("smeEyeLanguage") || "tr";
+
+    const statusLabels = {
+      en: {
+        PENDING: "Pending",
+        QUALITY_CHECK: "Quality Check",
+        APPROVED: "Approved",
+        SHIPPED: "Shipped",
+        DELAYED: "Delayed",
+        DELIVERED: "Delivered",
+        RETURN_INITIATED: "Return Started"
+      },
+      tr: {
+        PENDING: "Bekliyor",
+        QUALITY_CHECK: "Kalite Kontrol",
+        APPROVED: "Onaylandı",
+        SHIPPED: "Kargoda",
+        DELAYED: "Gecikti",
+        DELIVERED: "Teslim Edildi",
+        RETURN_INITIATED: "İade Başlatıldı"
+      }
+    };
+
+    function t(key) {
+      return translations[currentLanguage]?.[key] || translations.en[key] || key;
+    }
+
+    function statusText(status) {
+      return statusLabels[currentLanguage]?.[status] || status;
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLanguage;
+      document.getElementById("languageSelect").value = currentLanguage;
+      document.querySelectorAll("[data-i18n]").forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+        node.placeholder = t(node.dataset.i18nPlaceholder);
+      });
+      renderDashboard(dashboardData);
+    }
+
+    const statusClasses = {
+      PENDING: "border-yellow-300/30 bg-yellow-300/10 text-yellow-100",
+      QUALITY_CHECK: "border-orange-300/30 bg-orange-300/10 text-orange-100",
+      APPROVED: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
+      SHIPPED: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+      DELAYED: "border-rose-300/30 bg-rose-300/10 text-rose-100",
+      DELIVERED: "border-green-300/30 bg-green-300/10 text-green-100",
+      RETURN_INITIATED: "border-purple-300/30 bg-purple-300/10 text-purple-100"
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function badge(status) {
+      const classes = statusClasses[status] || "border-slate-300/30 bg-slate-300/10 text-slate-100";
+      return `<span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${classes}">${escapeHtml(statusText(status))}</span>`;
+    }
+
+    function shortDate(value) {
+      return new Date(value).toLocaleString([], { hour12: false });
+    }
+
+    function setOperationResult(message, tone = "neutral") {
+      const box = document.getElementById("operationResult");
+      const border = tone === "error" ? "border-rose-400/50 text-rose-100" : tone === "warning" ? "border-amber-300/50 text-amber-100" : "border-cyan/30 text-slate-100";
+      box.className = `mt-4 rounded-md border bg-[#070b16] p-4 text-sm whitespace-pre-wrap ${border}`;
+      box.textContent = message;
+    }
+
+    function renderDashboard(data) {
+      dashboardData = data;
+      document.getElementById("statTotalOrders").textContent = data.stats.total_orders;
+      document.getElementById("statCriticalStock").textContent = data.stats.critical_stock_alerts;
+      document.getElementById("statDelayed").textContent = data.stats.delayed_shipments;
+      document.getElementById("refreshStamp").textContent = `${t("updated")} ${new Date().toLocaleTimeString([], { hour12: false })}`;
+
+      const productSelect = document.getElementById("productId");
+      const selectedProduct = productSelect.value;
+      productSelect.innerHTML = data.products.map((product) =>
+        `<option value="${product.id}">${escapeHtml(product.name)} · ${t("stock")} ${product.stock_quantity}</option>`
+      ).join("");
+      if ([...productSelect.options].some((option) => option.value === selectedProduct)) {
+        productSelect.value = selectedProduct;
+      }
+
+      document.getElementById("ordersBody").innerHTML = data.orders.map((order) => `
+        <tr class="hover:bg-white/[0.03]">
+          <td class="px-5 py-4 font-mono text-slate-300">#${order.id}</td>
+          <td class="px-5 py-4">
+            <div class="font-medium text-white">${escapeHtml(order.customer_name)}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(order.customer_phone || "")}</div>
+          </td>
+          <td class="px-5 py-4">
+            <div class="text-slate-200">${escapeHtml(order.product?.name || t("unknown"))}</div>
+            <div class="text-xs ${order.product?.is_critical ? "text-amber-200" : "text-slate-500"}">${t("stock")} ${order.product?.stock_quantity ?? "-"}</div>
+          </td>
+          <td class="px-5 py-4">${badge(order.status)}</td>
+          <td class="px-5 py-4">
+            ${order.delivery_token ? `
+              <div class="flex max-w-[260px] flex-col gap-2">
+                <code class="break-all rounded bg-black/30 px-2 py-1 font-mono text-xs text-cyan">${escapeHtml(order.delivery_token)}</code>
+                <button onclick="copyDeliveryToken('${escapeHtml(order.delivery_token)}')" class="rounded-md border border-cyan/30 px-2 py-1 text-xs text-cyan transition hover:border-cyan hover:bg-cyan/10">${t("copyToken")}</button>
+              </div>
+            ` : `<span class="font-mono text-xs text-slate-400">${order.crypto_token_issued ? `sha256:${order.token_fingerprint}...` : t("notIssued")}</span>`}
+          </td>
+          <td class="px-5 py-4 text-slate-400">${shortDate(order.updated_at)}</td>
+          <td class="px-5 py-4">
+            <div class="flex flex-wrap gap-2">
+              <button onclick="selectOrder(${order.id})" class="rounded-md border border-line px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan/60 hover:text-cyan">${t("select")}</button>
+              ${order.delivery_token ? `<a href="/tracking?order_id=${order.id}&token=${encodeURIComponent(order.delivery_token)}" class="rounded-md border border-signal/30 px-3 py-1.5 text-xs text-signal transition hover:border-signal hover:bg-signal/10">${t("openPortal")}</a>` : ""}
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      document.getElementById("logsBody").innerHTML = (data.activities || []).map((log) => `
+        <article class="rounded-md border border-line bg-[#070b16] p-4">
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <p class="font-medium text-white">#${log.order_id} · ${escapeHtml(log.description)}</p>
+            <time class="text-xs text-slate-500">${shortDate(log.timestamp)}</time>
+          </div>
+          ${log.detail ? `<p class="mt-3 text-sm leading-6 text-slate-300">${escapeHtml(log.detail)}</p>` : ""}
+        </article>
+      `).join("");
+    }
+
+    async function refreshDashboard() {
+      const response = await fetch("/api/dashboard");
+      if (!response.ok) return;
+      renderDashboard(await response.json());
+    }
+
+    function selectOrder(orderId) {
+      document.getElementById("opsOrderId").value = orderId;
+      const order = dashboardData.orders.find((item) => item.id === orderId);
+      if (!order) return;
+      const nextAction = {
+        PENDING: t("nextActionPending"),
+        QUALITY_CHECK: t("nextActionPending"),
+        APPROVED: t("nextActionApproved"),
+        SHIPPED: t("nextActionShipped"),
+        DELAYED: t("nextActionDelayed"),
+        DELIVERED: t("nextActionDone"),
+        RETURN_INITIATED: t("nextActionDone")
+      }[order.status] || "";
+      setOperationResult(`${t("orderNumber")} #${order.id} · ${statusText(order.status)}\n${nextAction}`);
+    }
+
+    function fillQualityExample() {
+      const orderId = Number(document.getElementById("opsOrderId").value);
+      const order = dashboardData.orders.find((item) => item.id === orderId);
+      const productName = order?.product?.name || "ürün";
+      const lowerName = productName.toLocaleLowerCase("tr-TR");
+      let note = `${productName} için dış kutu sağlam, ürün etiketi doğrulandı, müşteri bilgileri kontrol edildi.`;
+
+      if (lowerName.includes("reçel") || lowerName.includes("salça") || lowerName.includes("zeytinyağı") || lowerName.includes("nar ekşisi")) {
+        note = `${productName} kavanoz/şişe kapağı sızdırmaz şekilde kontrol edildi, ürün dik konum etiketiyle işaretlendi, baloncuklu ambalajla sarıldı, darbe emici dolgu eklendi ve dış kutu bantlandı.`;
+      } else if (lowerName.includes("peynir") || lowerName.includes("yumurta") || lowerName.includes("baklava")) {
+        note = `${productName} tazelik ve son tüketim kontrolünden geçti, gıdaya uygun iç ambalaj kapatıldı, sıcaklık hassasiyeti dikkate alındı, kırılma/ezilme riskine karşı koruyucu dolgu eklendi ve dış kutu etiketlendi.`;
+      } else if (lowerName.includes("erişte") || lowerName.includes("tarhana") || lowerName.includes("incir")) {
+        note = `${productName} nemden koruyan kapalı ambalaja alındı, paket ağzı mühürlendi, ürün etiketi ve miktar kontrol edildi, dış kutuya darbe önleyici dolgu eklendi ve sevkiyat etiketi doğrulandı.`;
+      }
+
+      document.getElementById("qualityNote").value = note;
+    }
+
+    async function copyDeliveryToken(token) {
+      await navigator.clipboard.writeText(token);
+      setOperationResult(t("tokenCopied"));
+    }
+
+    async function resetDemoData() {
+      try {
+        const data = await postJson("/api/demo/reset", {});
+        renderDashboard(data);
+        setOperationResult(t("demoResetDone"));
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
+    }
+
+    async function postJson(url, body) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (data.ai_decision) {
+          const message = [
+            data.ai_decision.reason,
+            data.ai_decision.packaging_advice ? `${t("packagingAdvice")}: ${data.ai_decision.packaging_advice}` : "",
+            data.ai_decision.customer_message
+          ].filter(Boolean).join("\n\n");
+          throw new Error(message);
+        }
+        if (Array.isArray(data.detail)) {
+          throw new Error(currentLanguage === "tr" ? "Lütfen form alanlarını kontrol edin." : "Please check the form fields.");
+        }
+        throw new Error(data.detail || JSON.stringify(data));
+      }
+      return data;
+    }
+
+    document.getElementById("createOrderForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const data = await postJson("/api/orders", {
+          customer_name: document.getElementById("customerName").value,
+          customer_phone: document.getElementById("customerPhone").value,
+          product_id: Number(document.getElementById("productId").value)
+        });
+        setOperationResult(`${t("createdOrder")} #${data.order.id}.`);
+        event.target.reset();
+        await refreshDashboard();
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
+    });
+
+    async function runQualityCheck() {
+      const orderId = Number(document.getElementById("opsOrderId").value);
+      const workerNote = document.getElementById("qualityNote").value;
+      if (!orderId || !workerNote) {
+        setOperationResult(t("qualityRequired"), "error");
+        return;
+      }
+
+      try {
+        const data = await postJson(`/api/quality-check/${orderId}`, { worker_note: workerNote, language: currentLanguage });
+        setOperationResult(`${statusText("APPROVED")}\n${t("deliveryToken")}:\n${data.delivery_token}\n\n${t("geminiReason")}:\n${data.ai_decision.reason}`);
+        await refreshDashboard();
+      } catch (error) {
+        setOperationResult(error.message, "warning");
+        await refreshDashboard();
+      }
+    }
+
+    async function shipSelectedOrder() {
+      const orderId = Number(document.getElementById("opsOrderId").value);
+      if (!orderId) {
+        setOperationResult(t("orderIdRequired"), "error");
+        return;
+      }
+      try {
+        const data = await postJson(`/api/orders/${orderId}/ship`, {});
+        setOperationResult(`${t("orderNumber")} #${data.order.id} ${t("markedShipped")}.`);
+        await refreshDashboard();
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
+    }
+
+    async function simulateDelay() {
+      const orderId = Number(document.getElementById("opsOrderId").value);
+      if (!orderId) {
+        setOperationResult(t("orderIdRequired"), "error");
+        return;
+      }
+      try {
+        const data = await postJson("/api/cargo-webhook/simulate", { order_id: orderId, language: currentLanguage });
+        setOperationResult(`${statusText("DELAYED")}\n${data.customer_message}`);
+        await refreshDashboard();
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
+    }
+
+    document.getElementById("languageSelect").addEventListener("change", (event) => {
+      currentLanguage = event.target.value;
+      localStorage.setItem("smeEyeLanguage", currentLanguage);
+      applyLanguage();
+    });
+
+    applyLanguage();
+    setInterval(refreshDashboard, 5000);
+  </script>
+</body>
+</html>
