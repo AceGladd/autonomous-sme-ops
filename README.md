@@ -11,7 +11,7 @@ Gemini karar destek ajanı olarak kullanılır; fakat kritik sipariş durum geç
 Proje klasörüne gir:
 
 ```powershell
-cd "C:\Users\bedir\OneDrive\Desktop\Hackathon\autonomous-sme-ops"
+cd autonomous-sme-ops
 ```
 
 Sanal ortam oluştur:
@@ -114,7 +114,7 @@ POST /api/customer/message
 Open the project directory:
 
 ```powershell
-cd "C:\Users\bedir\OneDrive\Desktop\Hackathon\autonomous-sme-ops"
+cd autonomous-sme-ops
 ```
 
 Create a virtual environment:
