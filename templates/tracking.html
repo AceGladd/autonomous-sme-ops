@@ -98,6 +98,7 @@
         secureChat: "Token verified",
         customerMessage: "Write a message about your order.",
         sendMessage: "Send Message",
+        sentForApproval: "Your message was received. The suggested reply was sent to the operations team for approval.",
         product: "Product",
         tokenVerified: "Token verified.",
         invalidCredentials: "Order ID and a valid delivery token are required.",
@@ -122,6 +123,7 @@
         secureChat: "Token doğrulandı",
         customerMessage: "Siparişiniz hakkında mesaj yazın.",
         sendMessage: "Mesaj Gönder",
+        sentForApproval: "Mesajınız alındı. Önerilen yanıt yetkili onayına gönderildi.",
         product: "Ürün",
         tokenVerified: "Token doğrulandı.",
         invalidCredentials: "Sipariş ID ve geçerli teslimat tokeni gerekli.",
@@ -274,12 +276,13 @@
         panel.className = "mt-5 rounded-lg border border-line bg-[#070b16] p-4";
         panel.innerHTML = `
           <div class="flex items-center justify-between gap-3">
-            <p class="font-mono text-sm text-slate-400">${t("orderNumber")} #${data.order.id}</p>
+            <p class="font-mono text-sm text-cyan">${escapeHtml(data.order.public_order_code || `${t("orderNumber")} #${data.order.id}`)}</p>
             ${badge(data.order.status)}
           </div>
           <div class="mt-4">
             <p class="text-lg font-semibold text-white">${escapeHtml(data.order.product?.name || t("product"))}</p>
             <p class="mt-1 text-sm text-slate-400">${escapeHtml(data.order.customer_name)}</p>
+            <p class="mt-1 text-xs text-slate-500">${escapeHtml(data.order.origin_city)} → ${escapeHtml(data.order.destination_city)}</p>
           </div>
         `;
         document.getElementById("chatPanel").className = "mt-5 rounded-lg border border-line bg-[#070b16] p-4";
@@ -355,7 +358,7 @@
         });
         renderMessages(data.messages || []);
         messageInput.value = "";
-        setResult(data.reply);
+        setResult(t("sentForApproval"));
       } catch (error) {
         setResult(error.message, true);
       }

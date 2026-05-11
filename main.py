@@ -11,13 +11,15 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session, joinedload
 
 from ai_agent import AIConfigurationError, AIServiceError, GeminiAgent
 from database import Base, SessionLocal, engine, get_db
 from models import (
     CargoDelayRequest,
+    AdminMessageApprovalRequest,
+    AdminDirectMessageRequest,
     CustomerMessageRequest,
     DeliveryConfirmRequest,
     EventLog,
@@ -50,6 +52,7 @@ ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_sqlite_schema()
     seed_database()
     yield
 
@@ -59,6 +62,27 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+def ensure_sqlite_schema() -> None:
+    """Add lightweight demo columns for existing SQLite databases."""
+    if not str(engine.url).startswith("sqlite"):
+        return
+
+    with engine.begin() as connection:
+        columns = {row[1] for row in connection.execute(text("PRAGMA table_info(orders)")).fetchall()}
+        if "public_order_code" not in columns:
+            connection.execute(text("ALTER TABLE orders ADD COLUMN public_order_code VARCHAR(80)"))
+        if "origin_city" not in columns:
+            connection.execute(text("ALTER TABLE orders ADD COLUMN origin_city VARCHAR(80) DEFAULT 'İstanbul'"))
+        if "destination_city" not in columns:
+            connection.execute(text("ALTER TABLE orders ADD COLUMN destination_city VARCHAR(80) DEFAULT 'İstanbul'"))
+
+
+def make_public_order_code(order_id: int, customer_name: str = "") -> str:
+    seed = f"{order_id}:{customer_name}:SME-EYE".encode("utf-8")
+    fingerprint = hashlib.sha256(seed).hexdigest()[:10].upper()
+    return f"SME-TR-2026-OPS-{order_id:06d}-{fingerprint}"
 
 
 def seed_database() -> None:
@@ -91,28 +115,31 @@ def seed_demo_data(db: Session) -> None:
     db.flush()
 
     demo_orders = [
-        ("Ayşe Yılmaz", "+90 555 100 1001", products[0], OrderStatus.PENDING, None),
-        ("Mehmet Kaya", "+90 555 100 1002", products[1], OrderStatus.PENDING, None),
-        ("Zeynep Demir", "+90 555 100 1003", products[2], OrderStatus.APPROVED, "SME-EYE-DEMO-0003"),
-        ("Can Arslan", "+90 555 100 1004", products[3], OrderStatus.SHIPPED, "SME-EYE-DEMO-0004"),
-        ("Elif Şahin", "+90 555 100 1005", products[4], OrderStatus.DELAYED, "SME-EYE-DEMO-0005"),
-        ("Burak Çelik", "+90 555 100 1006", products[5], OrderStatus.SHIPPED, "SME-EYE-DEMO-0006"),
-        ("Derya Koç", "+90 555 100 1007", products[6], OrderStatus.APPROVED, "SME-EYE-DEMO-0007"),
-        ("Kerem Aydın", "+90 555 100 1008", products[7], OrderStatus.SHIPPED, "SME-EYE-DEMO-0008"),
-        ("Seda Öz", "+90 555 100 1009", products[8], OrderStatus.DELIVERED, "SME-EYE-DEMO-0009"),
-        ("Emre Aksoy", "+90 555 100 1010", products[9], OrderStatus.RETURN_INITIATED, "SME-EYE-DEMO-0010"),
+        ("Ayşe Yılmaz", "+90 555 100 1001", products[0], OrderStatus.PENDING, None, "Bursa", "Ankara"),
+        ("Mehmet Kaya", "+90 555 100 1002", products[1], OrderStatus.PENDING, None, "Balıkesir", "İstanbul"),
+        ("Zeynep Demir", "+90 555 100 1003", products[2], OrderStatus.APPROVED, "SME-EYE-DEMO-0003", "Konya", "İzmir"),
+        ("Can Arslan", "+90 555 100 1004", products[3], OrderStatus.SHIPPED, "SME-EYE-DEMO-0004", "Kahramanmaraş", "Antalya"),
+        ("Elif Şahin", "+90 555 100 1005", products[4], OrderStatus.DELAYED, "SME-EYE-DEMO-0005", "Aydın", "Trabzon"),
+        ("Burak Çelik", "+90 555 100 1006", products[5], OrderStatus.SHIPPED, "SME-EYE-DEMO-0006", "Gaziantep", "Eskişehir"),
+        ("Derya Koç", "+90 555 100 1007", products[6], OrderStatus.APPROVED, "SME-EYE-DEMO-0007", "İzmir", "Samsun"),
+        ("Kerem Aydın", "+90 555 100 1008", products[7], OrderStatus.SHIPPED, "SME-EYE-DEMO-0008", "Aydın", "Kayseri"),
+        ("Seda Öz", "+90 555 100 1009", products[8], OrderStatus.DELIVERED, "SME-EYE-DEMO-0009", "Bolu", "Ankara"),
+        ("Emre Aksoy", "+90 555 100 1010", products[9], OrderStatus.RETURN_INITIATED, "SME-EYE-DEMO-0010", "Adana", "İstanbul"),
     ]
 
-    for customer_name, customer_phone, product, status_value, demo_token in demo_orders:
+    for customer_name, customer_phone, product, status_value, demo_token, origin_city, destination_city in demo_orders:
         order = Order(
             customer_name=customer_name,
             customer_phone=customer_phone,
             product_id=product.id,
             status=status_value,
             crypto_token=demo_token,
+            origin_city=origin_city,
+            destination_city=destination_city,
         )
         db.add(order)
         db.flush()
+        order.public_order_code = make_public_order_code(order.id, customer_name)
         log_event(
             db,
             order.id,
@@ -121,8 +148,30 @@ def seed_demo_data(db: Session) -> None:
                 "kaynak": "demo_seed",
                 "durum": status_value.value,
                 "teslimat_tokeni": demo_token,
+                "gonderen_sehir": origin_city,
+                "gidecegi_sehir": destination_city,
             },
         )
+        if status_value == OrderStatus.DELAYED:
+            log_event(
+                db,
+                order.id,
+                "Acil işlem gerekiyor: gecikme tespit edildi.",
+                {
+                    "customer_message": "Gecikme için otomatik bilgilendirme hazırlandı. Operasyon ekibi teslimat sürecini düzeltecek.",
+                    "severity": "high",
+                },
+            )
+            log_event(
+                db,
+                order.id,
+                "Destek yanıtı onaylandı ve müşteriye gönderildi.",
+                {
+                    "role": "agent",
+                    "reply": "Kargonuzda gecikme tespit edildi. Operasyon ekibi teslimat sürecini düzeltmek için aksiyon aldı.",
+                    "intent": "cargo_delay_auto_notice",
+                },
+            )
 
 
 def token_digest(token: str) -> str:
@@ -205,12 +254,29 @@ def serialize_product(product: Product) -> dict[str, Any]:
 
 def serialize_order(order: Order, *, include_phone: bool = True) -> dict[str, Any]:
     token_is_digest = is_sha256_hex(order.crypto_token)
+    alert_level = "normal"
+    alert_reason = ""
+    if order.status in {OrderStatus.DELAYED, OrderStatus.RETURN_INITIATED}:
+        alert_level = "high"
+        alert_reason = "Acil işlem gerekiyor: gecikme veya iade riski var."
+    elif order.product and order.product.stock_quantity <= order.product.critical_threshold:
+        alert_level = "warning"
+        alert_reason = "Kritik stok seviyesine yaklaşıldı."
+    elif order.status == OrderStatus.QUALITY_CHECK:
+        alert_level = "warning"
+        alert_reason = "Kalite kontrol yeniden işlem bekliyor."
+
     data = {
         "id": order.id,
+        "public_order_code": order.public_order_code or make_public_order_code(order.id, order.customer_name),
         "customer_name": order.customer_name,
         "product_id": order.product_id,
         "product": serialize_product(order.product) if order.product else None,
         "status": order.status.value,
+        "origin_city": order.origin_city or "İstanbul",
+        "destination_city": order.destination_city or "İstanbul",
+        "alert_level": alert_level,
+        "alert_reason": alert_reason,
         "crypto_token_issued": bool(order.crypto_token),
         "delivery_token": order.crypto_token if order.crypto_token and not token_is_digest else None,
         "token_fingerprint": (
@@ -256,11 +322,22 @@ def serialize_activity(event: EventLog) -> dict[str, Any]:
         or ai_log.get("message")
         or ""
     )
+    description_lower = event.event_description.lower()
+    severity = ai_log.get("severity") or "normal"
+    if any(marker in description_lower for marker in ["gecik", "iade", "engellendi", "acil"]):
+        severity = "high"
+    elif any(marker in description_lower for marker in ["kalite", "stok", "uyarı"]):
+        severity = "warning"
+    order = event.order
     return {
         "id": event.id,
         "order_id": event.order_id,
+        "public_order_code": order.public_order_code or make_public_order_code(order.id, order.customer_name) if order else f"SME-ORDER-{event.order_id}",
+        "origin_city": order.origin_city or "İstanbul" if order else "-",
+        "destination_city": order.destination_city or "İstanbul" if order else "-",
         "description": event.event_description,
         "detail": detail,
+        "severity": severity,
         "timestamp": event.timestamp.isoformat(),
     }
 
@@ -269,7 +346,16 @@ def serialize_customer_messages(order_id: int, db: Session) -> list[dict[str, An
     events = (
         db.query(EventLog)
         .filter(EventLog.order_id == order_id)
-        .filter(EventLog.event_description.in_(["Müşteri mesajı alındı.", "Destek yanıtı üretildi."]))
+        .filter(
+            EventLog.event_description.in_(
+                [
+                    "Müşteri mesajı alındı.",
+                    "Otomatik inceleme mesajı müşteriye gönderildi.",
+                    "Destek yanıtı onaylandı ve müşteriye gönderildi.",
+                    "Yetkili müşteriye doğrudan mesaj gönderdi.",
+                ]
+            )
+        )
         .order_by(EventLog.timestamp.asc())
         .all()
     )
@@ -290,6 +376,26 @@ def serialize_customer_messages(order_id: int, db: Session) -> list[dict[str, An
     return messages
 
 
+def serialize_pending_message(event: EventLog) -> dict[str, Any]:
+    try:
+        payload = json.loads(event.ai_decision_log)
+    except json.JSONDecodeError:
+        payload = {}
+
+    order = event.order
+    return {
+        "id": event.id,
+        "order_id": event.order_id,
+        "public_order_code": order.public_order_code or make_public_order_code(order.id, order.customer_name) if order else f"SME-ORDER-{event.order_id}",
+        "customer_name": order.customer_name if order else "",
+        "product_name": order.product.name if order and order.product else "",
+        "message": payload.get("message", ""),
+        "draft_reply": payload.get("draft_reply", ""),
+        "intent": payload.get("intent", ""),
+        "timestamp": event.timestamp.isoformat(),
+    }
+
+
 def dashboard_payload(db: Session) -> dict[str, Any]:
     orders = (
         db.query(Order)
@@ -298,7 +404,22 @@ def dashboard_payload(db: Session) -> dict[str, Any]:
         .all()
     )
     products = db.query(Product).order_by(Product.name.asc()).all()
-    logs = db.query(EventLog).order_by(EventLog.timestamp.desc()).limit(30).all()
+    logs = (
+        db.query(EventLog)
+        .options(joinedload(EventLog.order).joinedload(Order.product))
+        .order_by(EventLog.timestamp.desc())
+        .limit(30)
+        .all()
+    )
+    delayed_orders = [order for order in orders if order.status == OrderStatus.DELAYED]
+    critical_products = [product for product in products if product.stock_quantity <= product.critical_threshold]
+    pending_message_events = (
+        db.query(EventLog)
+        .options(joinedload(EventLog.order).joinedload(Order.product))
+        .filter(EventLog.event_description == "Yanıt onay bekliyor.")
+        .order_by(EventLog.timestamp.desc())
+        .all()
+    )
 
     stats = {
         "total_orders": db.query(func.count(Order.id)).scalar() or 0,
@@ -319,7 +440,15 @@ def dashboard_payload(db: Session) -> dict[str, Any]:
     return {
         "stats": stats,
         "orders": [serialize_order(order) for order in orders],
+        "active_orders": [
+            serialize_order(order)
+            for order in orders
+            if order.status not in {OrderStatus.DELIVERED, OrderStatus.RETURN_INITIATED}
+        ],
         "products": [serialize_product(product) for product in products],
+        "critical_products": [serialize_product(product) for product in critical_products],
+        "delayed_orders": [serialize_order(order) for order in delayed_orders],
+        "pending_messages": [serialize_pending_message(event) for event in pending_message_events],
         "logs": [serialize_log(event) for event in logs],
         "activities": [serialize_activity(event) for event in logs],
     }
@@ -400,10 +529,13 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db)) -> dict[st
         customer_name=payload.customer_name,
         customer_phone=payload.customer_phone,
         product_id=product.id,
+        origin_city=payload.origin_city,
+        destination_city=payload.destination_city,
         status=OrderStatus.PENDING,
     )
     db.add(order)
     db.flush()
+    order.public_order_code = make_public_order_code(order.id, payload.customer_name)
     log_event(
         db,
         order.id,
@@ -520,7 +652,22 @@ def simulate_cargo_delay(payload: CargoDelayRequest, db: Session = Depends(get_d
         db,
         order.id,
         "Kargo gecikmesi simüle edildi; Gemini müşteriye özel bilgilendirme mesajı üretti.",
-        {**decision_log, "delay_reason": payload.delay_reason},
+        {
+            **decision_log,
+            "delay_reason": payload.delay_reason,
+            "severity": "high",
+            "customer_message": f"{decision.customer_message} Operasyon ekibi gecikmeyi düzeltmek için aksiyon aldı.",
+        },
+    )
+    log_event(
+        db,
+        order.id,
+        "Destek yanıtı onaylandı ve müşteriye gönderildi.",
+        {
+            "role": "agent",
+            "reply": f"{decision.customer_message} Operasyon ekibi gecikmeyi düzeltmek için aksiyon aldı.",
+            "intent": "cargo_delay_auto_notice",
+        },
     )
     db.commit()
     return {
@@ -671,11 +818,22 @@ def customer_message(payload: CustomerMessageRequest, db: Session = Depends(get_
     if not verify_delivery_token(order, payload.crypto_token):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Geçersiz teslimat tokeni.")
 
-    log_event(
+    customer_event = log_event(
         db,
         order.id,
         "Müşteri mesajı alındı.",
         {"role": "customer", "message": payload.message},
+    )
+    acknowledgement = (
+        "Mesajınız alındı. Operasyon ekibi yanıtı inceleyip onayladıktan sonra burada görebileceksiniz."
+        if payload.language == "tr"
+        else "Your message was received. The operations team will review and approve the reply before it appears here."
+    )
+    log_event(
+        db,
+        order.id,
+        "Otomatik inceleme mesajı müşteriye gönderildi.",
+        {"role": "agent", "reply": acknowledgement, "intent": "message_under_review"},
     )
 
     try:
@@ -688,11 +846,75 @@ def customer_message(payload: CustomerMessageRequest, db: Session = Depends(get_
     except Exception as exc:
         raise handle_ai_exception(exc) from exc
 
+    pending_event = log_event(
+        db,
+        order.id,
+        "Yanıt onay bekliyor.",
+        {
+            "role": "agent",
+            "message_event_id": customer_event.id,
+            "message": payload.message,
+            "draft_reply": decision.reply,
+            "intent": decision.intent,
+            "status": "pending_approval",
+        },
+    )
+    db.commit()
+    return {
+        "draft_reply": decision.reply,
+        "pending_approval": True,
+        "pending_event_id": pending_event.id,
+        "messages": serialize_customer_messages(order.id, db),
+    }
+
+
+@app.post("/api/admin/messages/{event_id}/approve")
+def approve_customer_message(
+    event_id: int,
+    approval: AdminMessageApprovalRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    event = (
+        db.query(EventLog)
+        .options(joinedload(EventLog.order))
+        .filter(EventLog.id == event_id)
+        .first()
+    )
+    if not event or event.event_description != "Yanıt onay bekliyor.":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Onay bekleyen mesaj bulunamadı.")
+
+    try:
+        event_payload = json.loads(event.ai_decision_log)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Mesaj kaydı okunamadı.") from exc
+
+    draft_reply = event_payload.get("draft_reply")
+    final_reply = (approval.reply_text or "").strip() or draft_reply
+    if not final_reply:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Onaylanacak taslak yanıt yok.")
+
+    event_payload["status"] = "approved"
+    event_payload["approved_reply"] = final_reply
+    event.event_description = "Yanıt yetkili tarafından onaylandı."
+    event.ai_decision_log = json.dumps(event_payload, ensure_ascii=False, default=str)
+    log_event(
+        db,
+        event.order_id,
+        "Destek yanıtı onaylandı ve müşteriye gönderildi.",
+        {"role": "agent", "reply": final_reply, "intent": event_payload.get("intent", "")},
+    )
+    db.commit()
+    return dashboard_payload(db)
+
+
+@app.post("/api/admin/orders/message")
+def admin_direct_message(payload: AdminDirectMessageRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
+    order = get_order_or_404(db, payload.order_id)
     log_event(
         db,
         order.id,
-        "Destek yanıtı üretildi.",
-        {"role": "agent", "reply": decision.reply, "intent": decision.intent},
+        "Yetkili müşteriye doğrudan mesaj gönderdi.",
+        {"role": "agent", "reply": payload.message, "intent": "admin_direct_message"},
     )
     db.commit()
-    return {"reply": decision.reply, "messages": serialize_customer_messages(order.id, db)}
+    return dashboard_payload(db)

@@ -34,23 +34,45 @@
           <option value="tr">TR</option>
         </select>
         <button onclick="resetDemoData()" class="rounded-md border border-amber-300/40 px-4 py-2 text-amber-100 transition hover:border-amber-200 hover:bg-amber-300/10" data-i18n="resetDemo">Demo Verisini Yenile</button>
+        <button onclick="scrollToNotifications()" class="rounded-md border border-rose-300/40 px-4 py-2 text-rose-100 transition hover:border-rose-200 hover:bg-rose-300/10" data-i18n="notificationsButton">Bildirimler</button>
+        <button onclick="scrollToPendingMessages()" class="rounded-md border border-cyan/30 px-4 py-2 text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="messagesButton">Mesajlar</button>
         <a href="/tracking" class="rounded-md border border-cyan/30 px-4 py-2 text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="customerPortal">Müşteri Portalı</a>
         <span id="refreshStamp" class="text-slate-400"></span>
       </nav>
     </header>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div class="rounded-lg border border-line bg-panel p-5 shadow-2xl shadow-black/20">
+      <button onclick="focusOrders('all')" class="rounded-lg border border-line bg-panel p-5 text-left shadow-2xl shadow-black/20 transition hover:border-cyan/50">
         <p class="text-sm text-slate-400" data-i18n="totalOrders">Toplam Sipariş</p>
         <p id="statTotalOrders" class="mt-3 text-3xl font-semibold text-white">{{ stats.total_orders }}</p>
-      </div>
-      <div class="rounded-lg border border-amber-400/30 bg-amber-400/10 p-5 shadow-2xl shadow-black/20">
+      </button>
+      <button onclick="toggleCriticalPanel()" class="rounded-lg border border-amber-400/30 bg-amber-400/10 p-5 text-left shadow-2xl shadow-black/20 transition hover:border-amber-200">
         <p class="text-sm text-amber-200" data-i18n="criticalStockAlerts">Kritik Stok Uyarıları</p>
         <p id="statCriticalStock" class="mt-3 text-3xl font-semibold text-amber-100">{{ stats.critical_stock_alerts }}</p>
-      </div>
-      <div class="rounded-lg border border-rose-400/30 bg-rose-400/10 p-5 shadow-2xl shadow-black/20">
+      </button>
+      <button onclick="focusOrders('delayed')" class="rounded-lg border border-rose-400/30 bg-rose-400/10 p-5 text-left shadow-2xl shadow-black/20 transition hover:border-rose-200">
         <p class="text-sm text-rose-200" data-i18n="delayedShipments">Geciken Gönderiler</p>
         <p id="statDelayed" class="mt-3 text-3xl font-semibold text-rose-100">{{ stats.delayed_shipments }}</p>
+      </button>
+    </section>
+
+    <section id="criticalStockPanel" class="hidden rounded-lg border border-amber-300/30 bg-amber-300/10 p-5"></section>
+
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+      <div class="rounded-lg border border-line bg-panel p-5">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-white" data-i18n="allOrders">Tüm Siparişler</h2>
+          <span class="rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs text-cyan" data-i18n="archiveList">Arşiv ve sorgu</span>
+        </div>
+        <div id="allOrdersBody" class="mt-4 grid max-h-96 gap-2 overflow-y-auto"></div>
+      </div>
+
+      <div id="pendingMessagesPanel" class="rounded-lg border border-cyan/30 bg-cyan/10 p-5">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-white" data-i18n="pendingMessages">Onay Bekleyen Mesajlar</h2>
+          <button onclick="scrollToPendingMessages()" class="rounded-md border border-cyan/40 px-3 py-1.5 text-xs text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="messagesButton">Mesajlar</button>
+        </div>
+        <div id="pendingMessagesBody" class="mt-4 grid gap-3"></div>
       </div>
     </section>
 
@@ -63,6 +85,8 @@
         <form id="createOrderForm" class="mt-5 grid gap-3">
           <input id="customerName" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Müşteri adı" data-i18n-placeholder="customerName" required>
           <input id="customerPhone" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Müşteri telefonu" data-i18n-placeholder="customerPhone" required>
+          <input id="originCity" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Gönderen şehir" data-i18n-placeholder="originCity" value="İstanbul" required>
+          <input id="destinationCity" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Gideceği şehir" data-i18n-placeholder="destinationCity" value="Ankara" required>
           <select id="productId" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" required>
             {% for product in products %}
             <option value="{{ product.id }}">{{ product.name }} · stock {{ product.stock_quantity }}</option>
@@ -87,22 +111,31 @@
           <button onclick="shipSelectedOrder()" class="rounded-md border border-cyan/30 px-4 py-2 text-sm text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="markShipped">Kargoya Ver</button>
           <button onclick="simulateDelay()" class="rounded-md border border-rose-400/40 px-4 py-2 text-sm text-rose-200 transition hover:border-rose-300 hover:bg-rose-400/10" data-i18n="simulateDelay">Gecikme Simüle Et</button>
         </div>
+        <div id="adminDirectMessagePanel" class="mt-4 hidden rounded-md border border-cyan/30 bg-cyan/10 p-4">
+          <p id="adminDirectMessageTitle" class="text-sm font-medium text-cyan-50"></p>
+          <textarea id="adminDirectMessageText" rows="3" class="mt-3 w-full rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Müşteriye mesaj yaz"></textarea>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button onclick="sendDirectAdminMessage()" class="rounded-md bg-cyan px-3 py-2 text-xs font-semibold text-slate-950" data-i18n="sendMessage">Mesaj Gönder</button>
+            <button onclick="closeDirectAdminMessage()" class="rounded-md border border-line px-3 py-2 text-xs text-slate-200" data-i18n="cancel">İptal</button>
+          </div>
+        </div>
         <div id="operationResult" class="mt-4 hidden rounded-md border border-line bg-[#070b16] p-4 text-sm text-slate-200"></div>
       </div>
     </section>
 
     <section class="rounded-lg border border-line bg-panel">
       <div class="flex flex-col gap-2 border-b border-line p-5 md:flex-row md:items-center md:justify-between">
-        <h2 class="text-lg font-semibold text-white" data-i18n="orders">Siparişler</h2>
+        <h2 class="text-lg font-semibold text-white" data-i18n="activeOrders">Aktif Siparişler</h2>
         <p class="text-sm text-slate-400" data-i18n="autoRefresh">Her 5 saniyede otomatik yenilenir</p>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-line text-left text-sm">
           <thead class="bg-[#070b16] text-xs uppercase tracking-wider text-slate-400">
             <tr>
-              <th class="px-5 py-3">ID</th>
+              <th class="px-5 py-3" data-i18n="orderCode">Sipariş Kodu</th>
               <th class="px-5 py-3" data-i18n="customer">Müşteri</th>
               <th class="px-5 py-3" data-i18n="product">Ürün</th>
+              <th class="px-5 py-3" data-i18n="cityRoute">Rota</th>
               <th class="px-5 py-3" data-i18n="status">Durum</th>
               <th class="px-5 py-3" data-i18n="token">Token</th>
               <th class="px-5 py-3" data-i18n="updated">Güncellendi</th>
@@ -130,6 +163,31 @@
         subtitle: "Autonomous SME Operations",
         customerPortal: "Customer Portal",
         resetDemo: "Reset Demo Data",
+        quickLookup: "Quick Order Lookup",
+        activeOrders: "Active Orders",
+        allOrders: "All Orders",
+        archiveList: "Archive and lookup",
+        shortList: "Short List",
+        quickSearch: "Search by order code, customer, or city",
+        pendingMessages: "Messages Waiting for Approval",
+        messagesButton: "Messages",
+        notificationsButton: "Notifications",
+        approveReply: "Approve Reply",
+        aiDraft: "AI Draft",
+        customReply: "Write your own response",
+        message: "Message",
+        sendMessage: "Send Message",
+        cancel: "Cancel",
+        directMessageSent: "Message sent to customer.",
+        showMoreHistory: "Show more history",
+        showLessHistory: "Show last 10",
+        noPendingMessages: "No messages waiting for approval.",
+        criticalStockDetails: "Critical Stock Details",
+        noCriticalStock: "No critical stock alerts.",
+        detail: "Detail",
+        route: "Route",
+        originCity: "Origin",
+        destinationCity: "Destination",
         totalOrders: "Total Orders",
         criticalStockAlerts: "Critical Stock Alerts",
         delayedShipments: "Delayed Shipments",
@@ -148,6 +206,8 @@
         autoRefresh: "Auto-refresh every 5 seconds",
         customer: "Customer",
         product: "Product",
+        orderCode: "Order Code",
+        cityRoute: "Route",
         status: "Status",
         token: "Token",
         updated: "Updated",
@@ -180,6 +240,31 @@
         subtitle: "Otonom KOBİ Operasyonları",
         customerPortal: "Müşteri Portalı",
         resetDemo: "Demo Verisini Yenile",
+        quickLookup: "Hızlı Sipariş Sorgu",
+        activeOrders: "Aktif Siparişler",
+        allOrders: "Tüm Siparişler",
+        archiveList: "Arşiv ve sorgu",
+        shortList: "Kısa Liste",
+        quickSearch: "Sipariş kodu, müşteri veya şehir ara",
+        pendingMessages: "Onay Bekleyen Mesajlar",
+        messagesButton: "Mesajlar",
+        notificationsButton: "Bildirimler",
+        approveReply: "Yanıtı Onayla",
+        aiDraft: "AI Taslak Yanıtı",
+        customReply: "Cevabı kendin yaz",
+        message: "Mesaj",
+        sendMessage: "Mesaj Gönder",
+        cancel: "İptal",
+        directMessageSent: "Mesaj müşteriye gönderildi.",
+        showMoreHistory: "Tüm işlem geçmişini gör",
+        showLessHistory: "Son 10 işleme dön",
+        noPendingMessages: "Onay bekleyen mesaj yok.",
+        criticalStockDetails: "Kritik Stok Detayları",
+        noCriticalStock: "Kritik stok uyarısı yok.",
+        detail: "Detay",
+        route: "Rota",
+        originCity: "Gönderen",
+        destinationCity: "Gideceği Şehir",
         totalOrders: "Toplam Sipariş",
         criticalStockAlerts: "Kritik Stok Uyarıları",
         delayedShipments: "Geciken Gönderiler",
@@ -198,6 +283,8 @@
         autoRefresh: "Her 5 saniyede otomatik yenilenir",
         customer: "Müşteri",
         product: "Ürün",
+        orderCode: "Sipariş Kodu",
+        cityRoute: "Rota",
         status: "Durum",
         token: "Token",
         updated: "Güncellendi",
@@ -228,8 +315,10 @@
       }
     };
 
-    let dashboardData = {{ {"orders": orders, "logs": logs, "activities": activities, "products": products, "stats": stats} | tojson }};
+    let dashboardData = {{ {"orders": orders, "active_orders": active_orders, "logs": logs, "activities": activities, "products": products, "critical_products": critical_products, "delayed_orders": delayed_orders, "pending_messages": pending_messages, "stats": stats} | tojson }};
     let currentLanguage = localStorage.getItem("smeEyeLanguage") || "tr";
+    let selectedOrderForMessage = null;
+    let showAllHistory = false;
 
     const statusLabels = {
       en: {
@@ -324,9 +413,19 @@
         productSelect.value = selectedProduct;
       }
 
-      document.getElementById("ordersBody").innerHTML = data.orders.map((order) => `
-        <tr class="hover:bg-white/[0.03]">
-          <td class="px-5 py-4 font-mono text-slate-300">#${order.id}</td>
+      const activeOrders = data.active_orders || data.orders.filter((order) => !["DELIVERED", "RETURN_INITIATED"].includes(order.status));
+      document.getElementById("ordersBody").innerHTML = activeOrders.map((order) => {
+        const rowAlert = order.alert_level === "high"
+          ? "border-l-4 border-l-rose-400 bg-rose-400/[0.04]"
+          : order.alert_level === "warning"
+          ? "border-l-4 border-l-amber-300 bg-amber-300/[0.03]"
+          : "";
+        return `
+        <tr class="hover:bg-white/[0.03] ${rowAlert}" id="order-row-${order.id}">
+          <td class="px-5 py-4">
+            <div class="font-mono text-xs text-cyan">${escapeHtml(order.public_order_code)}</div>
+            ${order.alert_reason ? `<div class="mt-1 text-xs ${order.alert_level === "high" ? "text-rose-200" : "text-amber-200"}">${escapeHtml(order.alert_reason)}</div>` : ""}
+          </td>
           <td class="px-5 py-4">
             <div class="font-medium text-white">${escapeHtml(order.customer_name)}</div>
             <div class="text-xs text-slate-500">${escapeHtml(order.customer_phone || "")}</div>
@@ -334,6 +433,10 @@
           <td class="px-5 py-4">
             <div class="text-slate-200">${escapeHtml(order.product?.name || t("unknown"))}</div>
             <div class="text-xs ${order.product?.is_critical ? "text-amber-200" : "text-slate-500"}">${t("stock")} ${order.product?.stock_quantity ?? "-"}</div>
+          </td>
+          <td class="px-5 py-4 text-sm text-slate-300">
+            <div>${escapeHtml(order.origin_city)} → ${escapeHtml(order.destination_city)}</div>
+            <div class="text-xs text-slate-500">${t("originCity")} / ${t("destinationCity")}</div>
           </td>
           <td class="px-5 py-4">${badge(order.status)}</td>
           <td class="px-5 py-4">
@@ -348,21 +451,46 @@
           <td class="px-5 py-4">
             <div class="flex flex-wrap gap-2">
               <button onclick="selectOrder(${order.id})" class="rounded-md border border-line px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan/60 hover:text-cyan">${t("select")}</button>
-              ${order.delivery_token ? `<a href="/tracking?order_id=${order.id}&token=${encodeURIComponent(order.delivery_token)}" class="rounded-md border border-signal/30 px-3 py-1.5 text-xs text-signal transition hover:border-signal hover:bg-signal/10">${t("openPortal")}</a>` : ""}
+              <button onclick="openDirectAdminMessage(${order.id})" class="rounded-md border border-cyan/30 px-3 py-1.5 text-xs text-cyan transition hover:border-cyan hover:bg-cyan/10">${t("message")}</button>
             </div>
           </td>
         </tr>
+      `;
+      }).join("");
+
+      document.getElementById("allOrdersBody").innerHTML = data.orders.map((order) => `
+        <button onclick="selectOrder(${order.id})" class="rounded-md border ${order.alert_level === "high" ? "border-rose-400/50 bg-rose-400/10" : "border-line bg-[#070b16]"} p-3 text-left transition hover:border-cyan/50">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="font-mono text-xs text-cyan">${escapeHtml(order.public_order_code)}</p>
+              <p class="mt-1 text-sm text-white">${escapeHtml(order.customer_name)} · ${escapeHtml(order.product?.name || "")}</p>
+            </div>
+            <div class="text-left sm:text-right">
+              ${badge(order.status)}
+              <p class="mt-1 text-xs text-slate-400">${escapeHtml(order.origin_city)} → ${escapeHtml(order.destination_city)}</p>
+            </div>
+          </div>
+        </button>
       `).join("");
 
-      document.getElementById("logsBody").innerHTML = (data.activities || []).map((log) => `
-        <article class="rounded-md border border-line bg-[#070b16] p-4">
+      const activities = showAllHistory ? (data.activities || []) : (data.activities || []).slice(0, 10);
+      document.getElementById("logsBody").innerHTML = activities.map((log) => `
+        <article class="rounded-md border ${log.severity === "high" ? "border-rose-400/50 bg-rose-400/10" : log.severity === "warning" ? "border-amber-300/40 bg-amber-300/10" : "border-line bg-[#070b16]"} p-4">
           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <p class="font-medium text-white">#${log.order_id} · ${escapeHtml(log.description)}</p>
+            <p class="font-medium text-white">${t("orderCode")}: ${escapeHtml(log.public_order_code)} · ${escapeHtml(log.description)}</p>
             <time class="text-xs text-slate-500">${shortDate(log.timestamp)}</time>
           </div>
+          <p class="mt-2 text-xs text-slate-400">${t("route")}: ${escapeHtml(log.origin_city)} → ${escapeHtml(log.destination_city)}</p>
           ${log.detail ? `<p class="mt-3 text-sm leading-6 text-slate-300">${escapeHtml(log.detail)}</p>` : ""}
         </article>
-      `).join("");
+      `).join("") + ((data.activities || []).length > 10 ? `
+        <button onclick="toggleHistory()" class="rounded-md border border-line px-4 py-2 text-sm text-slate-200 transition hover:border-cyan/60 hover:text-cyan">
+          ${showAllHistory ? t("showLessHistory") : t("showMoreHistory")}
+        </button>
+      ` : "");
+
+      renderCriticalPanel();
+      renderPendingMessages();
     }
 
     async function refreshDashboard() {
@@ -384,7 +512,130 @@
         DELIVERED: t("nextActionDone"),
         RETURN_INITIATED: t("nextActionDone")
       }[order.status] || "";
-      setOperationResult(`${t("orderNumber")} #${order.id} · ${statusText(order.status)}\n${nextAction}`);
+      setOperationResult(`${t("orderCode")}: ${order.public_order_code} · ${statusText(order.status)}\n${nextAction}`);
+      document.getElementById(`order-row-${order.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function focusOrders(mode) {
+      if (mode === "delayed") {
+        const delayed = dashboardData.orders.find((order) => order.status === "DELAYED");
+        if (delayed) selectOrder(delayed.id);
+        return;
+      }
+      document.querySelector("table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function toggleHistory() {
+      showAllHistory = !showAllHistory;
+      renderDashboard(dashboardData);
+    }
+
+    function openDirectAdminMessage(orderId) {
+      selectedOrderForMessage = orderId;
+      const order = dashboardData.orders.find((item) => item.id === orderId);
+      if (!order) return;
+      document.getElementById("adminDirectMessagePanel").className = "mt-4 rounded-md border border-cyan/30 bg-cyan/10 p-4";
+      document.getElementById("adminDirectMessageTitle").textContent = `${t("orderCode")}: ${order.public_order_code} · ${order.customer_name}`;
+      document.getElementById("adminDirectMessageText").value = "";
+      document.getElementById("adminDirectMessagePanel").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function closeDirectAdminMessage() {
+      selectedOrderForMessage = null;
+      document.getElementById("adminDirectMessagePanel").className = "mt-4 hidden rounded-md border border-cyan/30 bg-cyan/10 p-4";
+    }
+
+    async function sendDirectAdminMessage() {
+      const message = document.getElementById("adminDirectMessageText").value.trim();
+      if (!selectedOrderForMessage || !message) {
+        setOperationResult(currentLanguage === "tr" ? "Sipariş ve mesaj gerekli." : "Order and message are required.", "error");
+        return;
+      }
+      try {
+        const data = await postJson("/api/admin/orders/message", { order_id: selectedOrderForMessage, message });
+        renderDashboard(data);
+        closeDirectAdminMessage();
+        setOperationResult(t("directMessageSent"));
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
+    }
+
+    function toggleCriticalPanel() {
+      const panel = document.getElementById("criticalStockPanel");
+      panel.classList.toggle("hidden");
+      renderCriticalPanel();
+      if (!panel.classList.contains("hidden")) {
+        panel.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    function renderCriticalPanel() {
+      const panel = document.getElementById("criticalStockPanel");
+      if (!panel || panel.classList.contains("hidden")) return;
+      const products = dashboardData.critical_products || [];
+      panel.innerHTML = `
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-amber-100">${t("criticalStockDetails")}</h2>
+          <span class="text-xs text-amber-200">${products.length}</span>
+        </div>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          ${products.length ? products.map((product) => `
+            <article class="rounded-md border border-amber-300/30 bg-black/20 p-4">
+              <p class="font-medium text-white">${escapeHtml(product.name)}</p>
+              <p class="mt-2 text-sm text-amber-100">${t("stock")}: ${product.stock_quantity} / ${product.critical_threshold}</p>
+              <button onclick="setOperationResult('${escapeHtml(product.name)} · ${t("stock")}: ${product.stock_quantity}. ${t("criticalStockDetails")}')" class="mt-3 rounded-md border border-amber-300/40 px-3 py-1.5 text-xs text-amber-100">${t("detail")}</button>
+            </article>
+          `).join("") : `<p class="text-sm text-amber-100">${t("noCriticalStock")}</p>`}
+        </div>
+      `;
+    }
+
+    function scrollToPendingMessages() {
+      document.getElementById("pendingMessagesPanel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function scrollToNotifications() {
+      const highRisk = dashboardData.orders.find((order) => order.alert_level === "high");
+      if (highRisk) {
+        selectOrder(highRisk.id);
+        return;
+      }
+      document.getElementById("logsBody")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderPendingMessages() {
+      if (document.activeElement && document.activeElement.matches("textarea[id^='reply-']")) {
+        return;
+      }
+      const messages = dashboardData.pending_messages || [];
+      const body = document.getElementById("pendingMessagesBody");
+      body.innerHTML = messages.length ? messages.map((item) => `
+        <article class="rounded-md border border-cyan/30 bg-black/20 p-4">
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <p class="font-mono text-xs text-cyan">${escapeHtml(item.public_order_code)}</p>
+            <time class="text-xs text-slate-500">${shortDate(item.timestamp)}</time>
+          </div>
+          <p class="mt-2 text-sm text-white">${escapeHtml(item.customer_name)} · ${escapeHtml(item.product_name)}</p>
+          <p class="mt-3 rounded-md border border-line bg-black/20 p-3 text-sm text-slate-300">${escapeHtml(item.message)}</p>
+          <p class="mt-3 text-xs uppercase tracking-[0.18em] text-cyan">${t("aiDraft")}</p>
+          <p class="mt-3 rounded-md border border-cyan/20 bg-cyan/10 p-3 text-sm text-cyan-50">${escapeHtml(item.draft_reply)}</p>
+          <textarea id="reply-${item.id}" rows="3" class="mt-3 w-full rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="${t("customReply")}">${escapeHtml(item.draft_reply)}</textarea>
+          <button onclick="approveMessage(${item.id})" class="mt-3 rounded-md bg-cyan px-3 py-2 text-xs font-semibold text-slate-950">${t("approveReply")}</button>
+        </article>
+      `).join("") : `<p class="text-sm text-slate-400">${t("noPendingMessages")}</p>`;
+    }
+
+    async function approveMessage(eventId) {
+      try {
+        const replyText = document.getElementById(`reply-${eventId}`)?.value || "";
+        document.getElementById(`reply-${eventId}`)?.blur();
+        const data = await postJson(`/api/admin/messages/${eventId}/approve`, { reply_text: replyText });
+        renderDashboard(data);
+        setOperationResult(currentLanguage === "tr" ? "Mesaj yanıtı onaylandı ve müşteriye gönderildi." : "Message reply approved and sent.");
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
     }
 
     function fillQualityExample() {
@@ -450,9 +701,11 @@
         const data = await postJson("/api/orders", {
           customer_name: document.getElementById("customerName").value,
           customer_phone: document.getElementById("customerPhone").value,
-          product_id: Number(document.getElementById("productId").value)
+          product_id: Number(document.getElementById("productId").value),
+          origin_city: document.getElementById("originCity").value,
+          destination_city: document.getElementById("destinationCity").value
         });
-        setOperationResult(`${t("createdOrder")} #${data.order.id}.`);
+        setOperationResult(`${t("createdOrder")}: ${data.order.public_order_code}.`);
         event.target.reset();
         await refreshDashboard();
       } catch (error) {
@@ -486,7 +739,7 @@
       }
       try {
         const data = await postJson(`/api/orders/${orderId}/ship`, {});
-        setOperationResult(`${t("orderNumber")} #${data.order.id} ${t("markedShipped")}.`);
+        setOperationResult(`${t("orderCode")}: ${data.order.public_order_code} · ${t("markedShipped")}.`);
         await refreshDashboard();
       } catch (error) {
         setOperationResult(error.message, "error");

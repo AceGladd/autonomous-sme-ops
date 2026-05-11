@@ -51,7 +51,7 @@ class QualityDecision(BaseModel):
     approved: bool
     reason: str = Field(..., min_length=1)
     customer_message: str = Field(..., min_length=1)
-    packaging_advice: str = Field(..., min_length=1)
+    packaging_advice: str = "Ürünün türüne göre sızdırmazlık, darbe koruması, etiket ve gıda güvenliği kontrolleri tamamlanmalıdır."
 
     model_config = ConfigDict(extra="ignore")
 
@@ -452,6 +452,10 @@ Response language:
 
     @staticmethod
     def _validate(model_type: type[BaseModel], data: dict[str, Any]) -> Any:
+        if model_type is QualityDecision:
+            data["reason"] = data.get("reason") or "Kalite kontrol kararı üretildi ancak ayrıntı eksik döndü."
+            data["customer_message"] = data.get("customer_message") or "Siparişiniz kalite kontrol ekibi tarafından değerlendiriliyor."
+            data["packaging_advice"] = data.get("packaging_advice") or "Ürünün türüne göre sızdırmazlık, darbe koruması, etiket ve gıda güvenliği kontrolleri tamamlanmalıdır."
         try:
             return model_type.model_validate(data)
         except ValidationError as exc:

@@ -45,9 +45,12 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_order_code: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True, index=True)
     customer_name: Mapped[str] = mapped_column(String(160), nullable=False)
     customer_phone: Mapped[str] = mapped_column(String(40), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    origin_city: Mapped[str | None] = mapped_column(String(80), nullable=True, default="İstanbul")
+    destination_city: Mapped[str | None] = mapped_column(String(80), nullable=True, default="İstanbul")
     status: Mapped[OrderStatus] = mapped_column(
         SAEnum(OrderStatus, name="order_status", native_enum=False, validate_strings=True),
         nullable=False,
@@ -114,6 +117,8 @@ class OrderCreate(BaseModel):
     customer_name: str = Field(..., min_length=2, max_length=160)
     customer_phone: str = Field(..., min_length=6, max_length=40)
     product_id: int = Field(..., gt=0)
+    origin_city: str = Field(default="İstanbul", min_length=2, max_length=80)
+    destination_city: str = Field(default="İstanbul", min_length=2, max_length=80)
 
 
 class QualityCheckRequest(BaseModel):
@@ -157,3 +162,12 @@ class CustomerMessageRequest(BaseModel):
     crypto_token: str = Field(..., min_length=16, max_length=256)
     message: str = Field(..., min_length=2, max_length=2000)
     language: str = Field(default="en", pattern="^(en|tr)$")
+
+
+class AdminMessageApprovalRequest(BaseModel):
+    reply_text: str | None = Field(default=None, max_length=2000)
+
+
+class AdminDirectMessageRequest(BaseModel):
+    order_id: int = Field(..., gt=0)
+    message: str = Field(..., min_length=2, max_length=2000)
