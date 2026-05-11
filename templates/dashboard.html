@@ -4,16 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SME-Eye Operasyon Paneli</title>
+  <meta name="description" content="SME-Eye KOBİ otonom operasyon ve kalite yönetim paneli">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
-            void: "#050711",
-            panel: "#0b1020",
-            line: "#1f2a44",
-            cyan: "#22d3ee",
+            void: "#0f1117",
+            panel: "#1a1d27",
+            line: "#2a2e3d",
+            cyan: "#f59e42",
             signal: "#34d399"
           }
         }
@@ -21,44 +26,164 @@
     }
   </script>
 </head>
-<body class="min-h-screen bg-void text-slate-100">
+<body class="min-h-screen bg-void text-slate-100 font-sans">
+  <style>
+    * { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a2e3d; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3a3e4d; }
+
+    body.theme-light { background: #faf8f5 !important; color: #1c1917 !important; }
+    body.theme-light .bg-panel { background-color: #ffffff !important; }
+    body.theme-light .bg-void { background-color: #faf8f5 !important; }
+    body.theme-light .bg-\[\#070b16\] { background-color: #faf8f5 !important; }
+    body.theme-light .border-line { border-color: #e8e0d6 !important; }
+    body.theme-light .text-white { color: #1c1917 !important; }
+    body.theme-light .text-slate-100, body.theme-light .text-slate-200 { color: #44403c !important; }
+    body.theme-light .text-slate-300 { color: #57534e !important; }
+    body.theme-light .text-slate-400 { color: #78716c !important; }
+    body.theme-light .text-slate-500 { color: #a8a29e !important; }
+    body.theme-light .text-cyan { color: #e07a1e !important; }
+    body.theme-light .text-signal { color: #059669 !important; }
+
+    body.theme-light input, body.theme-light textarea, body.theme-light select {
+      background: #ffffff !important; color: #1c1917 !important; border-color: #e8e0d6 !important;
+    }
+    body.theme-light input:focus, body.theme-light textarea:focus, body.theme-light select:focus {
+      border-color: #e07a1e !important; box-shadow: 0 0 0 3px rgba(224,122,30,0.12) !important;
+    }
+
+    body.theme-light .bg-cyan { background-color: #e07a1e !important; }
+    body.theme-light .bg-cyan\/10, body.theme-light .bg-cyan\/5 { background-color: rgba(224,122,30,0.08) !important; }
+    body.theme-light .border-cyan\/30, body.theme-light .border-cyan\/40, body.theme-light .border-cyan\/50 { border-color: rgba(224,122,30,0.25) !important; }
+    body.theme-light .hover\:border-cyan:hover { border-color: #e07a1e !important; }
+    body.theme-light .hover\:text-cyan:hover { color: #e07a1e !important; }
+    body.theme-light .hover\:bg-cyan\/10:hover { background-color: rgba(224,122,30,0.08) !important; }
+    body.theme-light .ring-cyan\/50 { --tw-ring-color: rgba(224,122,30,0.2) !important; }
+    body.theme-light .text-cyan-50 { color: #57534e !important; }
+    body.theme-light .text-slate-950 { color: #ffffff !important; }
+
+    body.theme-light .bg-signal { background-color: #059669 !important; }
+    body.theme-light .border-signal\/30 { border-color: rgba(5,150,105,0.25) !important; }
+    body.theme-light .bg-signal\/10 { background-color: rgba(5,150,105,0.08) !important; }
+
+    body.theme-light .border-amber-300\/40, body.theme-light .border-amber-300\/30, body.theme-light .border-amber-400\/30 {
+      border-color: rgba(217,119,6,0.25) !important;
+    }
+    body.theme-light .bg-amber-300\/10, body.theme-light .bg-amber-400\/10 {
+      background-color: rgba(217,119,6,0.06) !important;
+    }
+    body.theme-light .text-amber-100, body.theme-light .text-amber-200 { color: #92400e !important; }
+    body.theme-light .hover\:border-amber-200:hover { border-color: #d97706 !important; }
+    body.theme-light .hover\:bg-amber-300\/10:hover { background-color: rgba(217,119,6,0.08) !important; }
+
+    body.theme-light .border-rose-300\/40, body.theme-light .border-rose-400\/30, body.theme-light .border-rose-400\/40 {
+      border-color: rgba(220,38,38,0.2) !important;
+    }
+    body.theme-light .bg-rose-300\/10, body.theme-light .bg-rose-400\/10 {
+      background-color: rgba(220,38,38,0.05) !important;
+    }
+    body.theme-light .text-rose-100, body.theme-light .text-rose-200 { color: #dc2626 !important; }
+    body.theme-light .hover\:border-rose-200:hover, body.theme-light .hover\:border-rose-300:hover { border-color: #dc2626 !important; }
+    body.theme-light .hover\:text-rose-200:hover { color: #dc2626 !important; }
+
+    body.theme-light .border-l-rose-400 { border-left-color: #dc2626 !important; }
+    body.theme-light .border-l-amber-300 { border-left-color: #d97706 !important; }
+    body.theme-light .bg-rose-400\/\[0\.04\] { background-color: rgba(220,38,38,0.03) !important; }
+    body.theme-light .bg-amber-300\/\[0\.03\] { background-color: rgba(217,119,6,0.03) !important; }
+
+    body.theme-light .bg-black\/20, body.theme-light .bg-black\/30 { background-color: rgba(0,0,0,0.03) !important; }
+    body.theme-light .hover\:bg-white\/\[0\.03\]:hover { background-color: rgba(0,0,0,0.02) !important; }
+
+    body.theme-light article, body.theme-light section, body.theme-light table {
+      box-shadow: 0 1px 3px rgba(28,25,23,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+    }
+    body.theme-light .shadow-2xl { box-shadow: 0 4px 16px rgba(28,25,23,0.06) !important; }
+    body.theme-light .shadow-black\/20 { --tw-shadow-color: rgba(28,25,23,0.04) !important; }
+
+    body.theme-light ::-webkit-scrollbar-thumb { background: #d6d3d1; }
+    body.theme-light ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+    body.theme-light .border-yellow-300\/30 { border-color: rgba(161,98,7,0.3) !important; }
+    body.theme-light .bg-yellow-300\/10 { background-color: rgba(161,98,7,0.08) !important; }
+    body.theme-light .text-yellow-100 { color: #854d0e !important; }
+    body.theme-light .border-orange-300\/30 { border-color: rgba(194,65,12,0.3) !important; }
+    body.theme-light .bg-orange-300\/10 { background-color: rgba(194,65,12,0.08) !important; }
+    body.theme-light .text-orange-100 { color: #9a3412 !important; }
+    body.theme-light .border-emerald-300\/30 { border-color: rgba(5,150,105,0.3) !important; }
+    body.theme-light .bg-emerald-300\/10 { background-color: rgba(5,150,105,0.08) !important; }
+    body.theme-light .text-emerald-100 { color: #065f46 !important; }
+    body.theme-light .border-cyan-300\/30 { border-color: rgba(14,116,144,0.3) !important; }
+    body.theme-light .bg-cyan-300\/10 { background-color: rgba(14,116,144,0.08) !important; }
+    body.theme-light .text-cyan-100 { color: #155e75 !important; }
+    body.theme-light .border-rose-300\/30 { border-color: rgba(190,18,60,0.3) !important; }
+    body.theme-light .bg-rose-300\/10 { background-color: rgba(190,18,60,0.08) !important; }
+    body.theme-light .text-rose-100 { color: #9f1239 !important; }
+    body.theme-light .border-green-300\/30 { border-color: rgba(22,101,52,0.3) !important; }
+    body.theme-light .bg-green-300\/10 { background-color: rgba(22,101,52,0.08) !important; }
+    body.theme-light .text-green-100 { color: #166534 !important; }
+    body.theme-light .border-purple-300\/30 { border-color: rgba(107,33,168,0.3) !important; }
+    body.theme-light .bg-purple-300\/10 { background-color: rgba(107,33,168,0.08) !important; }
+    body.theme-light .text-purple-100 { color: #6b21a8 !important; }
+
+    .admin-tab { transition: all 0.2s ease; }
+    .admin-tab:hover { background: rgba(245,158,66,0.08); }
+    .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .stat-card:hover { transform: translateY(-2px); }
+    button, a { transition: all 0.2s ease; }
+    tr { transition: background-color 0.15s ease; }
+  </style>
   <div class="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
     <header class="flex flex-col gap-4 border-b border-line pb-5 md:flex-row md:items-end md:justify-between">
-      <div>
-        <p class="text-xs uppercase tracking-[0.28em] text-cyan" data-i18n="subtitle">Otonom KOBİ Operasyonları</p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-normal text-white sm:text-4xl">SME-Eye</h1>
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan to-purple-400 text-xl shadow-lg shadow-cyan/20">👁️</div>
+        <div>
+          <p class="text-xs uppercase tracking-[0.28em] text-cyan" data-i18n="subtitle">Otonom KOBİ Operasyonları</p>
+          <h1 class="mt-1 text-3xl font-bold tracking-tight text-white sm:text-4xl">SME-Eye</h1>
+        </div>
       </div>
       <nav class="flex flex-wrap items-center gap-3 text-sm">
         <select id="languageSelect" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2">
           <option value="en">EN</option>
           <option value="tr">TR</option>
         </select>
+        <button onclick="toggleTheme()" id="themeToggleBtn" class="rounded-md border border-line px-4 py-2 text-slate-200 transition hover:border-cyan hover:text-cyan">🌙</button>
         <button onclick="resetDemoData()" class="rounded-md border border-amber-300/40 px-4 py-2 text-amber-100 transition hover:border-amber-200 hover:bg-amber-300/10" data-i18n="resetDemo">Demo Verisini Yenile</button>
         <button onclick="scrollToNotifications()" class="rounded-md border border-rose-300/40 px-4 py-2 text-rose-100 transition hover:border-rose-200 hover:bg-rose-300/10" data-i18n="notificationsButton">Bildirimler</button>
         <button onclick="scrollToPendingMessages()" class="rounded-md border border-cyan/30 px-4 py-2 text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="messagesButton">Mesajlar</button>
         <a href="/tracking" class="rounded-md border border-cyan/30 px-4 py-2 text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="customerPortal">Müşteri Portalı</a>
+        <a href="/logout" class="rounded-md border border-line px-4 py-2 text-slate-400 transition hover:border-rose-300 hover:text-rose-200" data-i18n="logout">Çıkış</a>
         <span id="refreshStamp" class="text-slate-400"></span>
       </nav>
     </header>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <button onclick="focusOrders('all')" class="rounded-lg border border-line bg-panel p-5 text-left shadow-2xl shadow-black/20 transition hover:border-cyan/50">
-        <p class="text-sm text-slate-400" data-i18n="totalOrders">Toplam Sipariş</p>
-        <p id="statTotalOrders" class="mt-3 text-3xl font-semibold text-white">{{ stats.total_orders }}</p>
+      <button onclick="focusOrders('all')" class="stat-card rounded-xl border border-line bg-panel p-5 text-left shadow-lg shadow-black/10 hover:border-cyan/50 hover:shadow-cyan/5">
+        <div class="flex items-center gap-3"><span class="text-2xl">📦</span><p class="text-sm text-slate-400" data-i18n="totalOrders">Toplam Sipariş</p></div>
+        <p id="statTotalOrders" class="mt-3 text-3xl font-bold text-white">{{ stats.total_orders }}</p>
       </button>
-      <button onclick="toggleCriticalPanel()" class="rounded-lg border border-amber-400/30 bg-amber-400/10 p-5 text-left shadow-2xl shadow-black/20 transition hover:border-amber-200">
-        <p class="text-sm text-amber-200" data-i18n="criticalStockAlerts">Kritik Stok Uyarıları</p>
-        <p id="statCriticalStock" class="mt-3 text-3xl font-semibold text-amber-100">{{ stats.critical_stock_alerts }}</p>
+      <button onclick="toggleCriticalPanel()" class="stat-card rounded-xl border border-amber-400/30 bg-amber-400/10 p-5 text-left shadow-lg shadow-black/10 hover:border-amber-200">
+        <div class="flex items-center gap-3"><span class="text-2xl">⚠️</span><p class="text-sm text-amber-200" data-i18n="criticalStockAlerts">Kritik Stok Uyarıları</p></div>
+        <p id="statCriticalStock" class="mt-3 text-3xl font-bold text-amber-100">{{ stats.critical_stock_alerts }}</p>
       </button>
-      <button onclick="focusOrders('delayed')" class="rounded-lg border border-rose-400/30 bg-rose-400/10 p-5 text-left shadow-2xl shadow-black/20 transition hover:border-rose-200">
-        <p class="text-sm text-rose-200" data-i18n="delayedShipments">Geciken Gönderiler</p>
-        <p id="statDelayed" class="mt-3 text-3xl font-semibold text-rose-100">{{ stats.delayed_shipments }}</p>
+      <button onclick="focusOrders('delayed')" class="stat-card rounded-xl border border-rose-400/30 bg-rose-400/10 p-5 text-left shadow-lg shadow-black/10 hover:border-rose-200">
+        <div class="flex items-center gap-3"><span class="text-2xl">🚨</span><p class="text-sm text-rose-200" data-i18n="delayedShipments">Geciken Gönderiler</p></div>
+        <p id="statDelayed" class="mt-3 text-3xl font-bold text-rose-100">{{ stats.delayed_shipments }}</p>
       </button>
     </section>
 
     <section id="criticalStockPanel" class="hidden rounded-lg border border-amber-300/30 bg-amber-300/10 p-5"></section>
 
-    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+    <nav class="flex flex-wrap gap-2 rounded-xl border border-line bg-panel p-2">
+      <button onclick="showAdminSection('operationsSection')" class="admin-tab rounded-lg px-4 py-2.5 text-sm font-medium text-slate-200" data-i18n="deliveryOps">⚙️ Teslimat İşlemleri</button>
+      <button onclick="showAdminSection('deliverySection')" class="admin-tab rounded-lg px-4 py-2.5 text-sm font-medium text-slate-200" data-i18n="orderListPanel">📋 Sipariş Listesi</button>
+      <button onclick="showAdminSection('stockSection')" class="admin-tab rounded-lg px-4 py-2.5 text-sm font-medium text-slate-200" data-i18n="stockPanel">📦 Stok Paneli</button>
+      <button onclick="showAdminSection('communicationSection')" class="admin-tab rounded-lg px-4 py-2.5 text-sm font-medium text-slate-200" data-i18n="communicationPanel">💬 Kullanıcı İletişimi</button>
+      <button onclick="showAdminSection('historySection')" class="admin-tab rounded-lg px-4 py-2.5 text-sm font-medium text-slate-200" data-i18n="historyPanel">📆 Operasyon Geçmişi</button>
+    </nav>
+
+    <section id="deliverySection" class="admin-section grid grid-cols-1 gap-4 lg:grid-cols-[0.8fr_1.2fr]">
       <div class="rounded-lg border border-line bg-panel p-5">
         <div class="flex items-center justify-between gap-3">
           <h2 class="text-lg font-semibold text-white" data-i18n="allOrders">Tüm Siparişler</h2>
@@ -76,7 +201,20 @@
       </div>
     </section>
 
-    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+    <section id="stockSection" class="admin-section hidden rounded-lg border border-line bg-panel p-5">
+      <h2 class="text-lg font-semibold text-white" data-i18n="stockPanel">Stok Paneli</h2>
+      <div id="stockPanelBody" class="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
+    </section>
+
+    <section id="communicationSection" class="admin-section hidden rounded-lg border border-line bg-panel p-5">
+      <h2 class="text-lg font-semibold text-white" data-i18n="communicationPanel">Kullanıcı İletişimi</h2>
+      <div class="mt-4 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <div id="communicationOrders" class="grid max-h-96 gap-2 overflow-y-auto"></div>
+        <div id="communicationCompose" class="rounded-lg border border-line bg-[#070b16] p-4"></div>
+      </div>
+    </section>
+
+    <section id="operationsSection" class="admin-section hidden grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
       <div class="rounded-lg border border-line bg-panel p-5">
         <div class="flex items-center justify-between gap-3">
           <h2 class="text-lg font-semibold text-white" data-i18n="orderIntake">Sipariş Girişi</h2>
@@ -123,16 +261,16 @@
       </div>
     </section>
 
-    <section class="rounded-lg border border-line bg-panel">
+    <section id="activeOrdersSection" class="admin-section rounded-lg border border-line bg-panel">
       <div class="flex flex-col gap-2 border-b border-line p-5 md:flex-row md:items-center md:justify-between">
         <h2 class="text-lg font-semibold text-white" data-i18n="activeOrders">Aktif Siparişler</h2>
-        <p class="text-sm text-slate-400" data-i18n="autoRefresh">Her 5 saniyede otomatik yenilenir</p>
+        <p class="text-sm text-slate-400" data-i18n="autoRefresh">Her 10 saniyede otomatik yenilenir</p>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-line text-left text-sm">
           <thead class="bg-[#070b16] text-xs uppercase tracking-wider text-slate-400">
             <tr>
-              <th class="px-5 py-3" data-i18n="orderCode">Sipariş Kodu</th>
+              <th class="px-5 py-3" data-i18n="orderNumber">Sipariş ID</th>
               <th class="px-5 py-3" data-i18n="customer">Müşteri</th>
               <th class="px-5 py-3" data-i18n="product">Ürün</th>
               <th class="px-5 py-3" data-i18n="cityRoute">Rota</th>
@@ -148,7 +286,7 @@
       </div>
     </section>
 
-    <section class="rounded-lg border border-line bg-panel">
+    <section id="historySection" class="admin-section hidden rounded-lg border border-line bg-panel">
       <div class="flex items-center justify-between border-b border-line p-5">
         <h2 class="text-lg font-semibold text-white" data-i18n="recentActivities">Son İşlemler</h2>
         <span class="text-xs uppercase tracking-[0.22em] text-slate-500" data-i18n="auditTrail">Operasyon Geçmişi</span>
@@ -163,6 +301,13 @@
         subtitle: "Autonomous SME Operations",
         customerPortal: "Customer Portal",
         resetDemo: "Reset Demo Data",
+        themeButton: "Theme",
+        logout: "Logout",
+        orderListPanel: "📋 Order List",
+        deliveryOps: "⚙️ Delivery Operations",
+        stockPanel: "📦 Stock Panel",
+        communicationPanel: "💬 Customer Communication",
+        historyPanel: "📆 Operation History",
         quickLookup: "Quick Order Lookup",
         activeOrders: "Active Orders",
         allOrders: "All Orders",
@@ -203,7 +348,7 @@
         markShipped: "Mark Shipped",
         simulateDelay: "Simulate Delay",
         orders: "Orders",
-        autoRefresh: "Auto-refresh every 5 seconds",
+        autoRefresh: "Auto-refresh every 10 seconds",
         customer: "Customer",
         product: "Product",
         orderCode: "Order Code",
@@ -233,6 +378,7 @@
         qualityRequired: "Order ID and quality note are required.",
         deliveryToken: "Delivery token",
         geminiReason: "Gemini reason",
+        stockAdd: "Add",
         packagingAdvice: "Packaging advice",
         markedShipped: "marked SHIPPED"
       },
@@ -240,6 +386,13 @@
         subtitle: "Otonom KOBİ Operasyonları",
         customerPortal: "Müşteri Portalı",
         resetDemo: "Demo Verisini Yenile",
+        themeButton: "Tema",
+        logout: "Çıkış",
+        orderListPanel: "📋 Sipariş Listesi",
+        deliveryOps: "⚙️ Teslimat İşlemleri",
+        stockPanel: "📦 Stok Paneli",
+        communicationPanel: "💬 Kullanıcı İletişimi",
+        historyPanel: "📆 Operasyon Geçmişi",
         quickLookup: "Hızlı Sipariş Sorgu",
         activeOrders: "Aktif Siparişler",
         allOrders: "Tüm Siparişler",
@@ -280,7 +433,7 @@
         markShipped: "Kargoya Ver",
         simulateDelay: "Gecikme Simüle Et",
         orders: "Siparişler",
-        autoRefresh: "Her 5 saniyede otomatik yenilenir",
+        autoRefresh: "Her 10 saniyede otomatik yenilenir",
         customer: "Müşteri",
         product: "Ürün",
         orderCode: "Sipariş Kodu",
@@ -310,6 +463,7 @@
         qualityRequired: "Sipariş ID ve kalite notu gerekli.",
         deliveryToken: "Teslimat tokeni",
         geminiReason: "Gemini gerekçesi",
+        stockAdd: "Ekle",
         packagingAdvice: "Paketleme tavsiyesi",
         markedShipped: "KARGOYA VERİLDİ olarak işaretlendi"
       }
@@ -317,6 +471,7 @@
 
     let dashboardData = {{ {"orders": orders, "active_orders": active_orders, "logs": logs, "activities": activities, "products": products, "critical_products": critical_products, "delayed_orders": delayed_orders, "pending_messages": pending_messages, "stats": stats} | tojson }};
     let currentLanguage = localStorage.getItem("smeEyeLanguage") || "tr";
+    let currentTheme = localStorage.getItem("smeEyeTheme") || "light";
     let selectedOrderForMessage = null;
     let showAllHistory = false;
 
@@ -359,6 +514,31 @@
         node.placeholder = t(node.dataset.i18nPlaceholder);
       });
       renderDashboard(dashboardData);
+    }
+
+    function applyTheme() {
+      document.body.classList.toggle("theme-light", currentTheme === "light");
+      const btn = document.getElementById("themeToggleBtn");
+      if (btn) btn.textContent = currentTheme === "light" ? "☀️" : "🌙";
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === "light" ? "dark" : "light";
+      localStorage.setItem("smeEyeTheme", currentTheme);
+      applyTheme();
+    }
+
+    function showAdminSection(sectionId) {
+      document.querySelectorAll(".admin-section").forEach((section) => {
+        const visible = section.id === sectionId || (sectionId === "operationsSection" && section.id === "activeOrdersSection");
+        section.classList.toggle("hidden", !visible);
+      });
+      document.querySelectorAll(".admin-tab").forEach((button) => {
+        const isActive = button.getAttribute("onclick")?.includes(sectionId);
+        button.classList.toggle("bg-cyan", Boolean(isActive));
+        button.classList.toggle("text-slate-950", Boolean(isActive));
+        button.classList.toggle("shadow-md", Boolean(isActive));
+      });
     }
 
     const statusClasses = {
@@ -423,7 +603,7 @@
         return `
         <tr class="hover:bg-white/[0.03] ${rowAlert}" id="order-row-${order.id}">
           <td class="px-5 py-4">
-            <div class="font-mono text-xs text-cyan">${escapeHtml(order.public_order_code)}</div>
+            <div class="font-mono text-xs text-cyan">${t("orderNumber")} #${order.id}</div>
             ${order.alert_reason ? `<div class="mt-1 text-xs ${order.alert_level === "high" ? "text-rose-200" : "text-amber-200"}">${escapeHtml(order.alert_reason)}</div>` : ""}
           </td>
           <td class="px-5 py-4">
@@ -462,7 +642,7 @@
         <button onclick="selectOrder(${order.id})" class="rounded-md border ${order.alert_level === "high" ? "border-rose-400/50 bg-rose-400/10" : "border-line bg-[#070b16]"} p-3 text-left transition hover:border-cyan/50">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="font-mono text-xs text-cyan">${escapeHtml(order.public_order_code)}</p>
+              <p class="font-mono text-xs text-cyan">${t("orderNumber")} #${order.id}</p>
               <p class="mt-1 text-sm text-white">${escapeHtml(order.customer_name)} · ${escapeHtml(order.product?.name || "")}</p>
             </div>
             <div class="text-left sm:text-right">
@@ -477,7 +657,7 @@
       document.getElementById("logsBody").innerHTML = activities.map((log) => `
         <article class="rounded-md border ${log.severity === "high" ? "border-rose-400/50 bg-rose-400/10" : log.severity === "warning" ? "border-amber-300/40 bg-amber-300/10" : "border-line bg-[#070b16]"} p-4">
           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <p class="font-medium text-white">${t("orderCode")}: ${escapeHtml(log.public_order_code)} · ${escapeHtml(log.description)}</p>
+            <p class="font-medium text-white">${t("orderNumber")} #${log.order_id} · ${escapeHtml(log.description)}</p>
             <time class="text-xs text-slate-500">${shortDate(log.timestamp)}</time>
           </div>
           <p class="mt-2 text-xs text-slate-400">${t("route")}: ${escapeHtml(log.origin_city)} → ${escapeHtml(log.destination_city)}</p>
@@ -491,6 +671,58 @@
 
       renderCriticalPanel();
       renderPendingMessages();
+      renderStockPanel();
+      renderCommunicationPanel();
+    }
+
+    function renderStockPanel() {
+      const target = document.getElementById("stockPanelBody");
+      if (!target) return;
+      target.innerHTML = (dashboardData.products || []).map((product) => `
+        <article class="rounded-lg border ${product.is_critical ? "border-amber-300/50 bg-amber-300/10" : "border-line bg-[#070b16]"} p-4">
+          <p class="font-medium text-white">${escapeHtml(product.name)}</p>
+          <div class="mt-2 flex items-center gap-3">
+            <span class="text-sm text-slate-300">${t("stock")}: <strong class="text-white">${product.stock_quantity}</strong></span>
+            <span class="text-xs text-slate-500">(min: ${product.critical_threshold})</span>
+          </div>
+          <div class="mt-3 flex items-center gap-2">
+            <button onclick="updateStock(${product.id}, -1)" class="flex h-8 w-8 items-center justify-center rounded-md border border-rose-400/40 text-rose-200 transition hover:bg-rose-400/10">−</button>
+            <button onclick="updateStock(${product.id}, -5)" class="rounded-md border border-rose-400/40 px-2 py-1 text-xs text-rose-200 transition hover:bg-rose-400/10">−5</button>
+            <button onclick="updateStock(${product.id}, 5)" class="rounded-md border border-signal/40 px-2 py-1 text-xs text-signal transition hover:bg-signal/10">+5</button>
+            <button onclick="updateStock(${product.id}, 1)" class="flex h-8 w-8 items-center justify-center rounded-md border border-signal/40 text-signal transition hover:bg-signal/10">+</button>
+            <input type="number" id="stockCustom-${product.id}" min="1" value="10" class="w-16 rounded-md border border-line bg-[#070b16] px-2 py-1 text-xs text-white outline-none">
+            <button onclick="updateStock(${product.id}, Number(document.getElementById('stockCustom-${product.id}').value))" class="rounded-md border border-cyan/40 px-2 py-1 text-xs text-cyan transition hover:bg-cyan/10">${t("stockAdd") || 'Ekle'}</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function updateStock(productId, change) {
+      try {
+        const data = await postJson(`/api/products/${productId}/stock`, { quantity_change: change });
+        renderDashboard(data);
+        setOperationResult(currentLanguage === 'tr' ? `Stok güncellendi (${change > 0 ? '+' : ''}${change}).` : `Stock updated (${change > 0 ? '+' : ''}${change}).`);
+      } catch (error) {
+        setOperationResult(error.message, 'error');
+      }
+    }
+
+    function renderCommunicationPanel() {
+      const ordersTarget = document.getElementById("communicationOrders");
+      const composeTarget = document.getElementById("communicationCompose");
+      if (!ordersTarget || !composeTarget) return;
+
+      ordersTarget.innerHTML = (dashboardData.orders || []).map((order) => `
+        <button onclick="openDirectAdminMessage(${order.id}); showAdminSection('communicationSection')" class="rounded-md border border-line bg-[#070b16] p-3 text-left transition hover:border-cyan/50">
+          <p class="font-mono text-xs text-cyan">${t("orderNumber")} #${order.id}</p>
+          <p class="mt-1 text-sm text-white">${escapeHtml(order.customer_name)}</p>
+          <p class="mt-1 text-xs text-slate-400">${escapeHtml(order.product?.name || "")}</p>
+        </button>
+      `).join("");
+
+      if (!selectedOrderForMessage) {
+        composeTarget.innerHTML = `<p class="text-sm text-slate-400">${currentLanguage === "tr" ? "Mesaj göndermek için soldan sipariş seçin." : "Select an order to send a message."}</p>`;
+      }
     }
 
     async function refreshDashboard() {
@@ -512,7 +744,7 @@
         DELIVERED: t("nextActionDone"),
         RETURN_INITIATED: t("nextActionDone")
       }[order.status] || "";
-      setOperationResult(`${t("orderCode")}: ${order.public_order_code} · ${statusText(order.status)}\n${nextAction}`);
+      setOperationResult(`${t("orderNumber")} #${order.id} · ${statusText(order.status)}\n${nextAction}`);
       document.getElementById(`order-row-${order.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
@@ -535,8 +767,16 @@
       const order = dashboardData.orders.find((item) => item.id === orderId);
       if (!order) return;
       document.getElementById("adminDirectMessagePanel").className = "mt-4 rounded-md border border-cyan/30 bg-cyan/10 p-4";
-      document.getElementById("adminDirectMessageTitle").textContent = `${t("orderCode")}: ${order.public_order_code} · ${order.customer_name}`;
+      document.getElementById("adminDirectMessageTitle").textContent = `${t("orderNumber")} #${order.id} · ${order.customer_name}`;
       document.getElementById("adminDirectMessageText").value = "";
+      const composeTarget = document.getElementById("communicationCompose");
+      if (composeTarget) {
+        composeTarget.innerHTML = `
+          <p class="text-sm font-medium text-white">${t("orderNumber")} #${order.id} · ${escapeHtml(order.customer_name)}</p>
+          <textarea id="communicationMessageText" rows="5" class="mt-3 w-full rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2" placeholder="${t("customReply")}"></textarea>
+          <button onclick="sendCommunicationMessage()" class="mt-3 rounded-md bg-cyan px-3 py-2 text-xs font-semibold text-slate-950">${t("sendMessage")}</button>
+        `;
+      }
       document.getElementById("adminDirectMessagePanel").scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
@@ -555,6 +795,21 @@
         const data = await postJson("/api/admin/orders/message", { order_id: selectedOrderForMessage, message });
         renderDashboard(data);
         closeDirectAdminMessage();
+        setOperationResult(t("directMessageSent"));
+      } catch (error) {
+        setOperationResult(error.message, "error");
+      }
+    }
+
+    async function sendCommunicationMessage() {
+      const message = document.getElementById("communicationMessageText")?.value.trim() || "";
+      if (!selectedOrderForMessage || !message) {
+        setOperationResult(currentLanguage === "tr" ? "Sipariş ve mesaj gerekli." : "Order and message are required.", "error");
+        return;
+      }
+      try {
+        const data = await postJson("/api/admin/orders/message", { order_id: selectedOrderForMessage, message });
+        renderDashboard(data);
         setOperationResult(t("directMessageSent"));
       } catch (error) {
         setOperationResult(error.message, "error");
@@ -613,7 +868,7 @@
       body.innerHTML = messages.length ? messages.map((item) => `
         <article class="rounded-md border border-cyan/30 bg-black/20 p-4">
           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <p class="font-mono text-xs text-cyan">${escapeHtml(item.public_order_code)}</p>
+            <p class="font-mono text-xs text-cyan">${t("orderNumber")} #${item.order_id}</p>
             <time class="text-xs text-slate-500">${shortDate(item.timestamp)}</time>
           </div>
           <p class="mt-2 text-sm text-white">${escapeHtml(item.customer_name)} · ${escapeHtml(item.product_name)}</p>
@@ -705,7 +960,7 @@
           origin_city: document.getElementById("originCity").value,
           destination_city: document.getElementById("destinationCity").value
         });
-        setOperationResult(`${t("createdOrder")}: ${data.order.public_order_code}.`);
+        setOperationResult(`${t("createdOrder")}: ${t("orderNumber")} #${data.order.id}.`);
         event.target.reset();
         await refreshDashboard();
       } catch (error) {
@@ -739,7 +994,7 @@
       }
       try {
         const data = await postJson(`/api/orders/${orderId}/ship`, {});
-        setOperationResult(`${t("orderCode")}: ${data.order.public_order_code} · ${t("markedShipped")}.`);
+        setOperationResult(`${t("orderNumber")} #${data.order.id} · ${t("markedShipped")}.`);
         await refreshDashboard();
       } catch (error) {
         setOperationResult(error.message, "error");
@@ -767,8 +1022,10 @@
       applyLanguage();
     });
 
+    applyTheme();
     applyLanguage();
-    setInterval(refreshDashboard, 5000);
+    showAdminSection("operationsSection");
+    setInterval(refreshDashboard, 10000);
   </script>
 </body>
 </html>

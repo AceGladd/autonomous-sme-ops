@@ -138,7 +138,7 @@ class CargoDelayRequest(BaseModel):
 
 class DeliveryConfirmRequest(BaseModel):
     order_id: int = Field(..., gt=0)
-    crypto_token: str = Field(..., min_length=16, max_length=256)
+    crypto_token: str | None = Field(default=None, max_length=256)
     customer_feedback: str = Field(..., min_length=3, max_length=2000)
     cargo_rating: int = Field(..., ge=1, le=5)
     delivery_confirmed: bool = True
@@ -147,19 +147,20 @@ class DeliveryConfirmRequest(BaseModel):
 
 class ReturnRequest(BaseModel):
     order_id: int = Field(..., gt=0)
-    crypto_token: str = Field(..., min_length=16, max_length=256)
+    crypto_token: str | None = Field(default=None, max_length=256)
     return_reason: str = Field(..., min_length=5, max_length=2000)
     language: str = Field(default="en", pattern="^(en|tr)$")
 
 
 class TrackingLookupRequest(BaseModel):
-    order_id: int = Field(..., gt=0)
-    crypto_token: str = Field(..., min_length=16, max_length=256)
+    order_id: int | None = Field(default=None, gt=0)
+    order_code: str | None = Field(default=None, max_length=80)
+    crypto_token: str | None = Field(default=None, max_length=256)
 
 
 class CustomerMessageRequest(BaseModel):
     order_id: int = Field(..., gt=0)
-    crypto_token: str = Field(..., min_length=16, max_length=256)
+    crypto_token: str | None = Field(default=None, max_length=256)
     message: str = Field(..., min_length=2, max_length=2000)
     language: str = Field(default="en", pattern="^(en|tr)$")
 
@@ -171,3 +172,7 @@ class AdminMessageApprovalRequest(BaseModel):
 class AdminDirectMessageRequest(BaseModel):
     order_id: int = Field(..., gt=0)
     message: str = Field(..., min_length=2, max_length=2000)
+
+
+class StockUpdateRequest(BaseModel):
+    quantity_change: int = Field(..., description="Positive to add, negative to remove")

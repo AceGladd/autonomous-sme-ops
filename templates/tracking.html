@@ -4,16 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SME-Eye Güvenli Takip</title>
+  <meta name="description" content="SME-Eye müşteri sipariş takip ve teslimat doğrulama portalı">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
-            void: "#050711",
-            panel: "#0b1020",
-            line: "#1f2a44",
-            cyan: "#22d3ee",
+            void: "#0f1117",
+            panel: "#1a1d27",
+            line: "#2a2e3d",
+            cyan: "#f59e42",
             signal: "#34d399"
           }
         }
@@ -21,62 +26,167 @@
     }
   </script>
 </head>
-<body class="min-h-screen bg-void text-slate-100">
+<body class="min-h-screen bg-void text-slate-100 font-sans">
+  <style>
+    * { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a2e3d; border-radius: 3px; }
+
+    body.theme-light { background: #faf8f5 !important; color: #1c1917 !important; }
+    body.theme-light .bg-panel { background-color: #ffffff !important; }
+    body.theme-light .bg-void { background-color: #faf8f5 !important; }
+    body.theme-light .bg-\[\#070b16\] { background-color: #faf8f5 !important; }
+    body.theme-light .border-line { border-color: #e8e0d6 !important; }
+    body.theme-light .text-white { color: #1c1917 !important; }
+    body.theme-light .text-slate-100, body.theme-light .text-slate-200 { color: #44403c !important; }
+    body.theme-light .text-slate-300 { color: #57534e !important; }
+    body.theme-light .text-slate-400 { color: #78716c !important; }
+    body.theme-light .text-slate-500 { color: #a8a29e !important; }
+    body.theme-light .text-cyan { color: #e07a1e !important; }
+    body.theme-light .text-signal { color: #059669 !important; }
+
+    body.theme-light input, body.theme-light textarea, body.theme-light select {
+      background: #ffffff !important; color: #1c1917 !important; border-color: #e8e0d6 !important;
+    }
+    body.theme-light input:focus, body.theme-light textarea:focus, body.theme-light select:focus {
+      border-color: #e07a1e !important; box-shadow: 0 0 0 3px rgba(224,122,30,0.12) !important;
+    }
+
+    body.theme-light .bg-cyan { background-color: #e07a1e !important; }
+    body.theme-light .bg-cyan\/10 { background-color: rgba(224,122,30,0.08) !important; }
+    body.theme-light .border-cyan\/30, body.theme-light .border-cyan\/40 { border-color: rgba(224,122,30,0.25) !important; }
+    body.theme-light .hover\:border-cyan:hover { border-color: #e07a1e !important; }
+    body.theme-light .hover\:bg-cyan\/10:hover { background-color: rgba(224,122,30,0.08) !important; }
+    body.theme-light .ring-cyan\/50 { --tw-ring-color: rgba(224,122,30,0.2) !important; }
+    body.theme-light .text-cyan-50 { color: #57534e !important; }
+    body.theme-light .text-slate-950 { color: #ffffff !important; }
+
+    body.theme-light .bg-signal { background-color: #059669 !important; }
+
+    body.theme-light .border-rose-300\/30, body.theme-light .border-rose-400\/30 {
+      border-color: rgba(220,38,38,0.2) !important;
+    }
+    body.theme-light .bg-rose-400\/10 { background-color: rgba(220,38,38,0.05) !important; }
+    body.theme-light .text-rose-100 { color: #dc2626 !important; }
+    body.theme-light .bg-rose-300 { background-color: #dc2626 !important; }
+
+    body.theme-light .bg-black\/20, body.theme-light .bg-black\/30 { background-color: rgba(0,0,0,0.03) !important; }
+
+    body.theme-light section, body.theme-light article {
+      box-shadow: 0 1px 3px rgba(28,25,23,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+    }
+    body.theme-light .shadow-2xl { box-shadow: 0 4px 16px rgba(28,25,23,0.06) !important; }
+    body.theme-light .shadow-black\/30 { --tw-shadow-color: rgba(28,25,23,0.04) !important; }
+    body.theme-light ::-webkit-scrollbar-thumb { background: #d6d3d1; }
+
+    body.theme-light .border-yellow-300\/30 { border-color: rgba(161,98,7,0.3) !important; }
+    body.theme-light .bg-yellow-300\/10 { background-color: rgba(161,98,7,0.08) !important; }
+    body.theme-light .text-yellow-200 { color: #854d0e !important; }
+    body.theme-light .border-orange-300\/30 { border-color: rgba(194,65,12,0.3) !important; }
+    body.theme-light .bg-orange-300\/10 { background-color: rgba(194,65,12,0.08) !important; }
+    body.theme-light .text-orange-200 { color: #9a3412 !important; }
+    body.theme-light .border-emerald-300\/30 { border-color: rgba(5,150,105,0.3) !important; }
+    body.theme-light .bg-emerald-300\/10 { background-color: rgba(5,150,105,0.08) !important; }
+    body.theme-light .text-emerald-200 { color: #065f46 !important; }
+    body.theme-light .border-cyan-300\/30 { border-color: rgba(14,116,144,0.3) !important; }
+    body.theme-light .bg-cyan-300\/10 { background-color: rgba(14,116,144,0.08) !important; }
+    body.theme-light .text-cyan-200 { color: #155e75 !important; }
+    body.theme-light .border-rose-300\/30 { border-color: rgba(190,18,60,0.3) !important; }
+    body.theme-light .bg-rose-300\/10 { background-color: rgba(190,18,60,0.08) !important; }
+    body.theme-light .text-rose-200 { color: #9f1239 !important; }
+    body.theme-light .border-green-300\/30 { border-color: rgba(22,101,52,0.3) !important; }
+    body.theme-light .bg-green-300\/10 { background-color: rgba(22,101,52,0.08) !important; }
+    body.theme-light .text-green-200 { color: #166534 !important; }
+    body.theme-light .border-purple-300\/30 { border-color: rgba(107,33,168,0.3) !important; }
+    body.theme-light .bg-purple-300\/10 { background-color: rgba(107,33,168,0.08) !important; }
+    body.theme-light .text-purple-200 { color: #6b21a8 !important; }
+
+    button, a { transition: all 0.2s ease; }
+
+    .star-rating { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
+    .star-rating input { display: none; }
+    .star-rating label {
+      cursor: pointer; font-size: 1.75rem; color: #2a2e3d;
+      transition: color 0.15s, transform 0.15s;
+    }
+    .star-rating label:hover, .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label { color: #f59e42; }
+    .star-rating label:hover { transform: scale(1.15); }
+    body.theme-light .star-rating label { color: #e8e0d6; }
+    body.theme-light .star-rating label:hover, body.theme-light .star-rating label:hover ~ label,
+    body.theme-light .star-rating input:checked ~ label { color: #e07a1e; }
+
+    .msg-bubble { animation: msgIn 0.3s cubic-bezier(0.16,1,0.3,1); }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
   <main class="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center px-4 py-8">
-    <section class="rounded-lg border border-line bg-panel p-5 shadow-2xl shadow-black/30 sm:p-7">
+    <section class="rounded-2xl border border-line bg-panel p-5 shadow-2xl shadow-black/30 sm:p-7">
       <div class="flex flex-col gap-3 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-[0.28em] text-cyan" data-i18n="subtitle">Secure Delivery Verification</p>
-          <h1 class="mt-2 text-3xl font-semibold text-white" data-i18n="title">SME-Eye Takip</h1>
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan to-purple-400 text-lg shadow-lg shadow-cyan/20">👁️</div>
+          <div>
+            <p class="text-xs uppercase tracking-[0.28em] text-cyan" data-i18n="subtitle">Secure Delivery Verification</p>
+            <h1 class="mt-1 text-2xl font-bold text-white" data-i18n="title">SME-Eye Takip</h1>
+          </div>
         </div>
         <div class="flex items-center gap-3">
-          <select id="languageSelect" class="rounded-md border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2">
+          <select id="languageSelect" class="rounded-lg border border-line bg-[#070b16] px-3 py-2 text-sm text-white outline-none ring-cyan/50 focus:ring-2">
             <option value="en">EN</option>
             <option value="tr">TR</option>
           </select>
+          <button onclick="toggleTheme()" id="themeToggleBtn" class="text-lg transition hover:scale-110">🌙</button>
           <a href="/dashboard" class="text-sm text-slate-400 transition hover:text-cyan" data-i18n="admin">Yönetim</a>
         </div>
       </div>
 
       <form id="lookupForm" class="mt-6 grid gap-3">
-        <input id="orderId" type="number" min="1" class="rounded-md border border-line bg-[#070b16] px-3 py-3 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Sipariş ID" data-i18n-placeholder="orderId" required>
-        <input id="cryptoToken" class="rounded-md border border-line bg-[#070b16] px-3 py-3 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Teslimat tokeni" data-i18n-placeholder="deliveryToken" required>
-        <button class="rounded-md bg-cyan px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan/80" data-i18n="viewStatus">Durumu Gör</button>
+        <input id="orderId" type="number" min="1" class="rounded-xl border border-line bg-[#070b16] px-4 py-3.5 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Sipariş ID" data-i18n-placeholder="orderId">
+        <div class="flex items-center gap-2">
+          <div class="h-px flex-1 bg-line"></div>
+          <span class="text-xs text-slate-500" data-i18n="orLabel">veya</span>
+          <div class="h-px flex-1 bg-line"></div>
+        </div>
+        <input id="orderCode" type="text" class="rounded-xl border border-line bg-[#070b16] px-4 py-3.5 text-base text-white outline-none ring-cyan/50 focus:ring-2 font-mono text-sm" placeholder="Sipariş Kodu (SME-TR-2026-...)" data-i18n-placeholder="orderCode">
+        <button class="rounded-xl bg-cyan px-4 py-3.5 text-sm font-semibold text-slate-950 transition hover:opacity-90 hover:shadow-lg hover:shadow-cyan/20" data-i18n="viewStatus">Durumu Gör</button>
       </form>
 
-      <div id="statusPanel" class="mt-5 hidden rounded-lg border border-line bg-[#070b16] p-4"></div>
+      <div id="statusPanel" class="mt-5 hidden rounded-xl border border-line bg-[#070b16] p-5"></div>
 
-      <form id="feedbackForm" class="mt-5 hidden grid gap-3">
-        <select id="cargoRating" class="rounded-md border border-line bg-[#070b16] px-3 py-3 text-base text-white outline-none ring-cyan/50 focus:ring-2" required>
-          <option value="5">5 - Çok iyi</option>
-          <option value="4">4 - İyi</option>
-          <option value="3">3 - Orta</option>
-          <option value="2">2 - Kötü</option>
-          <option value="1">1 - Çok kötü</option>
-        </select>
-        <textarea id="customerFeedback" rows="4" class="rounded-md border border-line bg-[#070b16] px-3 py-3 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Paket sorunsuz geldi veya hasarı açıklayın." data-i18n-placeholder="feedback" required></textarea>
-        <button class="rounded-md bg-signal px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-signal/80" data-i18n="submitFeedback">Teslimat Geri Bildirimi Gönder</button>
+      <form id="feedbackForm" class="mt-5 hidden grid gap-4">
+        <div>
+          <p class="mb-2 text-sm font-medium text-slate-300" data-i18n="ratingLabel">Kargo Puanı</p>
+          <div class="star-rating">
+            <input type="radio" id="star5" name="rating" value="5" checked><label for="star5">★</label>
+            <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+            <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+            <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+            <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+          </div>
+        </div>
+        <textarea id="customerFeedback" rows="4" class="rounded-xl border border-line bg-[#070b16] px-4 py-3.5 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Paket sorunsuz geldi veya hasarı açıklayın." data-i18n-placeholder="feedback" required></textarea>
+        <button class="rounded-xl bg-signal px-4 py-3.5 text-sm font-semibold text-slate-950 transition hover:opacity-90 hover:shadow-lg hover:shadow-signal/20" data-i18n="submitFeedback">Teslimat Geri Bildirimi Gönder</button>
       </form>
 
-      <form id="returnForm" class="mt-5 hidden grid gap-3 rounded-lg border border-rose-400/30 bg-rose-400/10 p-4">
+      <form id="returnForm" class="mt-5 hidden grid gap-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-5">
         <p class="text-sm font-medium text-rose-100" data-i18n="returnPanel">İade Paneli</p>
-        <textarea id="returnReason" rows="3" class="rounded-md border border-rose-300/30 bg-[#070b16] px-3 py-3 text-base text-white outline-none ring-rose-300/50 focus:ring-2" placeholder="İade sebebini açıklayın." data-i18n-placeholder="returnReason"></textarea>
-        <button class="rounded-md bg-rose-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-rose-200" data-i18n="submitReturn">İade Talebi Gönder</button>
+        <textarea id="returnReason" rows="3" class="rounded-xl border border-rose-300/30 bg-[#070b16] px-4 py-3.5 text-base text-white outline-none ring-rose-300/50 focus:ring-2" placeholder="İade sebebini açıklayın." data-i18n-placeholder="returnReason"></textarea>
+        <button class="rounded-xl bg-rose-300 px-4 py-3.5 text-sm font-semibold text-slate-950 transition hover:opacity-90" data-i18n="submitReturn">İade Talebi Gönder</button>
       </form>
 
-      <section id="chatPanel" class="mt-5 hidden rounded-lg border border-line bg-[#070b16] p-4">
+      <section id="chatPanel" class="mt-5 hidden rounded-xl border border-line bg-[#070b16] p-5">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="text-base font-semibold text-white" data-i18n="messagePanel">Mesaj Paneli</h2>
-          <span class="text-xs text-slate-500" data-i18n="secureChat">Token doğrulandı</span>
+          <h2 class="flex items-center gap-2 text-base font-semibold text-white"><span>💬</span><span data-i18n="messagePanel">Mesaj Paneli</span></h2>
+          <span class="rounded-full border border-signal/30 bg-signal/10 px-2.5 py-1 text-xs text-signal" data-i18n="secureChat">Token doğrulandı</span>
         </div>
         <div id="messageList" class="mt-4 grid max-h-72 gap-3 overflow-y-auto"></div>
         <form id="messageForm" class="mt-4 grid gap-3">
-          <textarea id="customerMessage" rows="3" class="rounded-md border border-line bg-black/20 px-3 py-3 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Siparişiniz hakkında mesaj yazın." data-i18n-placeholder="customerMessage"></textarea>
-          <button class="rounded-md border border-cyan/40 px-4 py-3 text-sm font-semibold text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="sendMessage">Mesaj Gönder</button>
+          <textarea id="customerMessage" rows="3" class="rounded-xl border border-line bg-black/20 px-4 py-3.5 text-base text-white outline-none ring-cyan/50 focus:ring-2" placeholder="Siparişiniz hakkında mesaj yazın." data-i18n-placeholder="customerMessage"></textarea>
+          <button class="rounded-xl border border-cyan/40 px-4 py-3.5 text-sm font-semibold text-cyan transition hover:border-cyan hover:bg-cyan/10" data-i18n="sendMessage">Mesaj Gönder</button>
         </form>
       </section>
 
-      <div id="resultPanel" class="mt-5 hidden rounded-md border border-line bg-black/20 p-4 text-sm"></div>
+      <div id="resultPanel" class="mt-5 hidden rounded-xl border border-line bg-black/20 p-4 text-sm"></div>
     </section>
   </main>
 
@@ -87,8 +197,10 @@
         title: "SME-Eye Tracking",
         admin: "Admin",
         orderId: "Order ID",
-        deliveryToken: "Delivery token",
+        orderCode: "Order Code (SME-TR-2026-...)",
+        orLabel: "or",
         viewStatus: "View Status",
+        ratingLabel: "Cargo Rating",
         feedback: "Package arrived safely, or describe any damage.",
         submitFeedback: "Submit Delivery Feedback",
         returnPanel: "Return Panel",
@@ -101,9 +213,8 @@
         sentForApproval: "Your message was received. The suggested reply was sent to the operations team for approval.",
         product: "Product",
         tokenVerified: "Token verified.",
-        invalidCredentials: "Order ID and a valid delivery token are required.",
+        invalidCredentials: "Order ID or order code is required.",
         validationError: "Please check the form fields.",
-        tokenTooShort: "Delivery token must be at least 16 characters.",
         feedbackNotReady: "This order is not ready for delivery feedback yet.",
         orderNumber: "Order"
       },
@@ -112,8 +223,10 @@
         title: "SME-Eye Takip",
         admin: "Yönetim",
         orderId: "Sipariş ID",
-        deliveryToken: "Teslimat tokeni",
+        orderCode: "Sipariş Kodu (SME-TR-2026-...)",
+        orLabel: "veya",
         viewStatus: "Durumu Gör",
+        ratingLabel: "Kargo Puanı",
         feedback: "Paket sorunsuz geldi veya hasarı açıklayın.",
         submitFeedback: "Teslimat Geri Bildirimi Gönder",
         returnPanel: "İade Paneli",
@@ -126,85 +239,66 @@
         sentForApproval: "Mesajınız alındı. Önerilen yanıt yetkili onayına gönderildi.",
         product: "Ürün",
         tokenVerified: "Token doğrulandı.",
-        invalidCredentials: "Sipariş ID ve geçerli teslimat tokeni gerekli.",
+        invalidCredentials: "Sipariş ID veya sipariş kodu gerekli.",
         validationError: "Lütfen form alanlarını kontrol edin.",
-        tokenTooShort: "Teslimat tokeni en az 16 karakter olmalı.",
         feedbackNotReady: "Bu sipariş henüz teslimat geri bildirimi için hazır değil.",
         orderNumber: "Sipariş"
       }
     };
 
     let currentLanguage = localStorage.getItem("smeEyeLanguage") || "tr";
+    let currentTheme = localStorage.getItem("smeEyeTheme") || "light";
 
     const statusLabels = {
-      en: {
-        PENDING: "Pending",
-        QUALITY_CHECK: "Quality Check",
-        APPROVED: "Approved",
-        SHIPPED: "Shipped",
-        DELAYED: "Delayed",
-        DELIVERED: "Delivered",
-        RETURN_INITIATED: "Return Started"
-      },
-      tr: {
-        PENDING: "Bekliyor",
-        QUALITY_CHECK: "Kalite Kontrol",
-        APPROVED: "Onaylandı",
-        SHIPPED: "Kargoda",
-        DELAYED: "Gecikti",
-        DELIVERED: "Teslim Edildi",
-        RETURN_INITIATED: "İade Başlatıldı"
-      }
+      en: { PENDING: "Pending", QUALITY_CHECK: "Quality Check", APPROVED: "Approved", SHIPPED: "Shipped", DELAYED: "Delayed", DELIVERED: "Delivered", RETURN_INITIATED: "Return Started" },
+      tr: { PENDING: "Bekliyor", QUALITY_CHECK: "Kalite Kontrol", APPROVED: "Onaylandı", SHIPPED: "Kargoda", DELAYED: "Gecikti", DELIVERED: "Teslim Edildi", RETURN_INITIATED: "İade Başlatıldı" }
     };
 
-    function t(key) {
-      return translations[currentLanguage]?.[key] || translations.en[key] || key;
-    }
-
-    function statusText(status) {
-      return statusLabels[currentLanguage]?.[status] || status;
-    }
+    function t(key) { return translations[currentLanguage]?.[key] || translations.en[key] || key; }
+    function statusText(status) { return statusLabels[currentLanguage]?.[status] || status; }
 
     function applyLanguage() {
       document.documentElement.lang = currentLanguage;
       document.getElementById("languageSelect").value = currentLanguage;
-      document.querySelectorAll("[data-i18n]").forEach((node) => {
-        node.textContent = t(node.dataset.i18n);
-      });
-      document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
-        node.placeholder = t(node.dataset.i18nPlaceholder);
-      });
+      document.querySelectorAll("[data-i18n]").forEach((n) => { n.textContent = t(n.dataset.i18n); });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((n) => { n.placeholder = t(n.dataset.i18nPlaceholder); });
+    }
+
+    function applyTheme() {
+      document.body.classList.toggle("theme-light", currentTheme === "light");
+      const btn = document.getElementById("themeToggleBtn");
+      if (btn) btn.textContent = currentTheme === "light" ? "☀️" : "🌙";
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === "light" ? "dark" : "light";
+      localStorage.setItem("smeEyeTheme", currentTheme);
+      applyTheme();
     }
 
     const statusClasses = {
-      PENDING: "border-yellow-300/30 bg-yellow-300/10 text-yellow-100",
-      QUALITY_CHECK: "border-orange-300/30 bg-orange-300/10 text-orange-100",
-      APPROVED: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
-      SHIPPED: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
-      DELAYED: "border-rose-300/30 bg-rose-300/10 text-rose-100",
-      DELIVERED: "border-green-300/30 bg-green-300/10 text-green-100",
-      RETURN_INITIATED: "border-purple-300/30 bg-purple-300/10 text-purple-100"
+      PENDING: "border-yellow-300/30 bg-yellow-300/10 text-yellow-200",
+      QUALITY_CHECK: "border-orange-300/30 bg-orange-300/10 text-orange-200",
+      APPROVED: "border-emerald-300/30 bg-emerald-300/10 text-emerald-200",
+      SHIPPED: "border-cyan-300/30 bg-cyan-300/10 text-cyan-200",
+      DELAYED: "border-rose-300/30 bg-rose-300/10 text-rose-200",
+      DELIVERED: "border-green-300/30 bg-green-300/10 text-green-200",
+      RETURN_INITIATED: "border-purple-300/30 bg-purple-300/10 text-purple-200"
     };
 
-    function escapeHtml(value) {
-      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#039;"
-      }[char]));
+    function escapeHtml(v) {
+      return String(v ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
     }
 
     function badge(status) {
-      const classes = statusClasses[status] || "border-slate-300/30 bg-slate-300/10 text-slate-100";
-      return `<span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${classes}">${escapeHtml(statusText(status))}</span>`;
+      const c = statusClasses[status] || "border-slate-300/30 bg-slate-300/10 text-slate-100";
+      return `<span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${c}">${escapeHtml(statusText(status))}</span>`;
     }
 
     function setResult(message, error = false) {
-      const panel = document.getElementById("resultPanel");
-      panel.className = `mt-5 rounded-md border bg-black/20 p-4 text-sm whitespace-pre-wrap ${error ? "border-rose-400/50 text-rose-100" : "border-cyan/30 text-slate-100"}`;
-      panel.textContent = message;
+      const p = document.getElementById("resultPanel");
+      p.className = `mt-5 rounded-xl border bg-black/20 p-4 text-sm whitespace-pre-wrap ${error ? "border-rose-400/50 text-rose-100" : "border-cyan/30 text-slate-100"}`;
+      p.textContent = message;
     }
 
     function renderMessages(messages = []) {
@@ -213,14 +307,14 @@
         list.innerHTML = `<p class="text-sm text-slate-500">${currentLanguage === "tr" ? "Henüz mesaj yok." : "No messages yet."}</p>`;
         return;
       }
-
       list.innerHTML = messages.map((item) => {
         const isCustomer = item.role === "customer";
         const align = isCustomer ? "justify-self-end border-cyan/30 bg-cyan/10 text-cyan-50" : "justify-self-start border-line bg-black/30 text-slate-100";
         const label = isCustomer ? (currentLanguage === "tr" ? "Siz" : "You") : "SME-Eye";
+        const avatar = isCustomer ? "👤" : "🤖";
         return `
-          <article class="max-w-[88%] rounded-lg border p-3 ${align}">
-            <p class="text-xs text-slate-400">${label}</p>
+          <article class="msg-bubble max-w-[88%] rounded-xl border p-3 ${align}">
+            <p class="flex items-center gap-1.5 text-xs text-slate-400"><span>${avatar}</span>${label}</p>
             <p class="mt-1 text-sm leading-6">${escapeHtml(item.message)}</p>
           </article>
         `;
@@ -229,54 +323,51 @@
     }
 
     async function postJson(url, body) {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        if (Array.isArray(data.detail)) {
-          throw new Error(t("validationError"));
-        }
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        if (Array.isArray(data.detail)) throw new Error(t("validationError"));
         throw new Error(data.detail || JSON.stringify(data));
       }
       return data;
     }
 
     function credentials() {
+      const orderId = Number(document.getElementById("orderId").value);
+      const orderCode = document.getElementById("orderCode").value.trim();
       return {
-        order_id: Number(document.getElementById("orderId").value),
-        crypto_token: document.getElementById("cryptoToken").value
+        order_id: orderId || null,
+        order_code: orderCode || null,
+        crypto_token: null
       };
     }
 
     function validateCredentials() {
-      const current = credentials();
-      if (!current.order_id || !current.crypto_token) {
-        throw new Error(t("invalidCredentials"));
-      }
-      if (current.crypto_token.length < 16) {
-        throw new Error(t("tokenTooShort"));
-      }
-      return current;
+      const c = credentials();
+      if (!c.order_id && !c.order_code) throw new Error(t("invalidCredentials"));
+      return c;
     }
 
-    document.getElementById("languageSelect").addEventListener("change", (event) => {
-      currentLanguage = event.target.value;
+    function getSelectedRating() {
+      const checked = document.querySelector('.star-rating input:checked');
+      return checked ? Number(checked.value) : 5;
+    }
+
+    document.getElementById("languageSelect").addEventListener("change", (e) => {
+      currentLanguage = e.target.value;
       localStorage.setItem("smeEyeLanguage", currentLanguage);
       applyLanguage();
     });
 
-    document.getElementById("lookupForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
+    document.getElementById("lookupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       try {
         const data = await postJson("/api/tracking/lookup", validateCredentials());
         const panel = document.getElementById("statusPanel");
-        panel.className = "mt-5 rounded-lg border border-line bg-[#070b16] p-4";
+        panel.className = "mt-5 rounded-xl border border-line bg-[#070b16] p-5";
         panel.innerHTML = `
           <div class="flex items-center justify-between gap-3">
-            <p class="font-mono text-sm text-cyan">${escapeHtml(data.order.public_order_code || `${t("orderNumber")} #${data.order.id}`)}</p>
+            <p class="font-mono text-sm text-cyan">${t("orderNumber")} #${data.order.id}</p>
             ${badge(data.order.status)}
           </div>
           <div class="mt-4">
@@ -285,34 +376,34 @@
             <p class="mt-1 text-xs text-slate-500">${escapeHtml(data.order.origin_city)} → ${escapeHtml(data.order.destination_city)}</p>
           </div>
         `;
-        document.getElementById("chatPanel").className = "mt-5 rounded-lg border border-line bg-[#070b16] p-4";
+        document.getElementById("chatPanel").className = "mt-5 rounded-xl border border-line bg-[#070b16] p-5";
         renderMessages(data.messages || []);
 
         if (["SHIPPED", "DELAYED", "DELIVERED"].includes(data.order.status)) {
-          document.getElementById("feedbackForm").className = "mt-5 grid gap-3";
-          document.getElementById("returnForm").className = "mt-5 grid gap-3 rounded-lg border border-rose-400/30 bg-rose-400/10 p-4";
+          document.getElementById("feedbackForm").className = "mt-5 grid gap-4";
+          document.getElementById("returnForm").className = "mt-5 grid gap-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-5";
           setResult(t("tokenVerified"));
         } else {
-          document.getElementById("feedbackForm").className = "mt-5 hidden grid gap-3";
-          document.getElementById("returnForm").className = "mt-5 hidden grid gap-3 rounded-lg border border-rose-400/30 bg-rose-400/10 p-4";
+          document.getElementById("feedbackForm").className = "mt-5 hidden grid gap-4";
+          document.getElementById("returnForm").className = "mt-5 hidden grid gap-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-5";
           setResult(`${t("tokenVerified")}\n${t("feedbackNotReady")}`);
         }
       } catch (error) {
-        document.getElementById("statusPanel").className = "mt-5 hidden rounded-lg border border-line bg-[#070b16] p-4";
-        document.getElementById("feedbackForm").className = "mt-5 hidden grid gap-3";
-        document.getElementById("returnForm").className = "mt-5 hidden grid gap-3 rounded-lg border border-rose-400/30 bg-rose-400/10 p-4";
-        document.getElementById("chatPanel").className = "mt-5 hidden rounded-lg border border-line bg-[#070b16] p-4";
+        document.getElementById("statusPanel").className = "mt-5 hidden";
+        document.getElementById("feedbackForm").className = "mt-5 hidden grid gap-4";
+        document.getElementById("returnForm").className = "mt-5 hidden grid gap-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-5";
+        document.getElementById("chatPanel").className = "mt-5 hidden";
         setResult(error.message, true);
       }
     });
 
-    document.getElementById("feedbackForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
+    document.getElementById("feedbackForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       try {
         const data = await postJson("/api/delivery/confirm", {
           ...validateCredentials(),
           customer_feedback: document.getElementById("customerFeedback").value,
-          cargo_rating: Number(document.getElementById("cargoRating").value),
+          cargo_rating: getSelectedRating(),
           delivery_confirmed: true,
           language: currentLanguage
         });
@@ -323,8 +414,8 @@
       }
     });
 
-    document.getElementById("returnForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
+    document.getElementById("returnForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       try {
         const data = await postJson("/api/return/request", {
           ...validateCredentials(),
@@ -334,46 +425,41 @@
         setResult(`${statusText(data.order.status)}\n${data.customer_message}`);
         document.getElementById("statusPanel").querySelector("span").outerHTML = badge(data.order.status);
         if (data.order.status === "RETURN_INITIATED") {
-          document.getElementById("feedbackForm").className = "mt-5 hidden grid gap-3";
-          document.getElementById("returnForm").className = "mt-5 hidden grid gap-3 rounded-lg border border-rose-400/30 bg-rose-400/10 p-4";
+          document.getElementById("feedbackForm").className = "mt-5 hidden grid gap-4";
+          document.getElementById("returnForm").className = "mt-5 hidden grid gap-3 rounded-xl border border-rose-400/30 bg-rose-400/10 p-5";
         }
       } catch (error) {
         setResult(error.message, true);
       }
     });
 
-    document.getElementById("messageForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const messageInput = document.getElementById("customerMessage");
-      if (!messageInput.value.trim()) {
+    document.getElementById("messageForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("customerMessage");
+      if (!input.value.trim()) {
         setResult(currentLanguage === "tr" ? "Mesaj alanı boş olamaz." : "Message cannot be empty.", true);
         return;
       }
-
       try {
         const data = await postJson("/api/customer/message", {
           ...validateCredentials(),
-          message: messageInput.value,
+          message: input.value,
           language: currentLanguage
         });
         renderMessages(data.messages || []);
-        messageInput.value = "";
+        input.value = "";
         setResult(t("sentForApproval"));
       } catch (error) {
         setResult(error.message, true);
       }
     });
 
+    applyTheme();
     applyLanguage();
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("order_id")) {
       document.getElementById("orderId").value = params.get("order_id");
-    }
-    if (params.get("token")) {
-      document.getElementById("cryptoToken").value = params.get("token");
-    }
-    if (params.get("order_id") && params.get("token")) {
       document.getElementById("lookupForm").requestSubmit();
     }
   </script>

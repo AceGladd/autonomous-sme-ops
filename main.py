@@ -3,12 +3,13 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, text
@@ -29,6 +30,7 @@ from models import (
     Product,
     QualityCheckRequest,
     ReturnRequest,
+    StockUpdateRequest,
     TrackingLookupRequest,
     utc_now,
 )
@@ -37,6 +39,10 @@ from models import (
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 agent = GeminiAgent()
+ADMIN_USERNAME = os.getenv("SME_EYE_ADMIN_USER", "admin")
+ADMIN_PASSWORD = os.getenv("SME_EYE_ADMIN_PASSWORD", "admin")
+ADMIN_SECRET = os.getenv("SME_EYE_ADMIN_SECRET", "change-this-demo-secret")
+ADMIN_COOKIE = "sme_eye_admin_session"
 
 ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.PENDING: {OrderStatus.QUALITY_CHECK, OrderStatus.APPROVED},
@@ -83,6 +89,24 @@ def make_public_order_code(order_id: int, customer_name: str = "") -> str:
     seed = f"{order_id}:{customer_name}:SME-EYE".encode("utf-8")
     fingerprint = hashlib.sha256(seed).hexdigest()[:10].upper()
     return f"SME-TR-2026-OPS-{order_id:06d}-{fingerprint}"
+
+
+def sign_admin_session(username: str) -> str:
+    signature = hmac.new(ADMIN_SECRET.encode("utf-8"), username.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{username}:{signature}"
+
+
+def is_valid_admin_session(session_value: str | None) -> bool:
+    if not session_value or ":" not in session_value:
+        return False
+    username, signature = session_value.split(":", 1)
+    expected = sign_admin_session(username).split(":", 1)[1]
+    return username == ADMIN_USERNAME and hmac.compare_digest(signature, expected)
+
+
+def require_admin(request: Request) -> None:
+    if not is_valid_admin_session(request.cookies.get(ADMIN_COOKIE)):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin girişi gerekli.")
 
 
 def seed_database() -> None:
@@ -196,6 +220,13 @@ def verify_delivery_token(order: Order, provided_token: str) -> bool:
         order.crypto_token,
         token_digest(provided_token),
     )
+
+
+def verify_customer_access(order: Order, provided_token: str | None) -> bool:
+    """Demo-friendly customer access: order ID is enough, token remains backward-compatible."""
+    if not provided_token:
+        return True
+    return verify_delivery_token(order, provided_token)
 
 
 def is_sha256_hex(value: str | None) -> bool:
@@ -477,6 +508,34 @@ def root() -> RedirectResponse:
     return RedirectResponse(url="/dashboard")
 
 
+@app.get("/login", response_class=HTMLResponse, include_in_schema=False)
+def login_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "login.html", {"error": None})
+
+
+@app.post("/login", include_in_schema=False)
+def login(username: str = Form(...), password: str = Form(...)) -> RedirectResponse:
+    if username != ADMIN_USERNAME or password != ADMIN_PASSWORD:
+        response = RedirectResponse(url="/login?error=1", status_code=status.HTTP_303_SEE_OTHER)
+        return response
+    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        key=ADMIN_COOKIE,
+        value=sign_admin_session(username),
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 8,
+    )
+    return response
+
+
+@app.get("/logout", include_in_schema=False)
+def logout() -> RedirectResponse:
+    response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    response.delete_cookie(ADMIN_COOKIE)
+    return response
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -489,6 +548,8 @@ def favicon() -> Response:
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    if not is_valid_admin_session(request.cookies.get(ADMIN_COOKIE)):
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -502,12 +563,14 @@ def tracking(request: Request) -> HTMLResponse:
 
 
 @app.get("/api/dashboard")
-def dashboard_api(db: Session = Depends(get_db)) -> dict[str, Any]:
+def dashboard_api(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
     return dashboard_payload(db)
 
 
 @app.post("/api/demo/reset")
-def reset_demo(db: Session = Depends(get_db)) -> dict[str, Any]:
+def reset_demo(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
     db.query(EventLog).delete()
     db.query(Order).delete()
     db.query(Product).delete()
@@ -517,7 +580,8 @@ def reset_demo(db: Session = Depends(get_db)) -> dict[str, Any]:
 
 
 @app.post("/api/orders", status_code=status.HTTP_201_CREATED)
-def create_order(payload: OrderCreate, db: Session = Depends(get_db)) -> dict[str, Any]:
+def create_order(payload: OrderCreate, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
     product = db.query(Product).filter(Product.id == payload.product_id).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ürün bulunamadı.")
@@ -548,7 +612,8 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db)) -> dict[st
 
 
 @app.post("/api/quality-check/{order_id}")
-def quality_check(order_id: int, payload: QualityCheckRequest, db: Session = Depends(get_db)) -> JSONResponse:
+def quality_check(order_id: int, payload: QualityCheckRequest, request: Request, db: Session = Depends(get_db)) -> JSONResponse:
+    require_admin(request)
     order = get_order_or_404(db, order_id)
     if order.status not in {OrderStatus.PENDING, OrderStatus.QUALITY_CHECK}:
         raise HTTPException(
@@ -607,7 +672,8 @@ def quality_check(order_id: int, payload: QualityCheckRequest, db: Session = Dep
 
 
 @app.post("/api/orders/{order_id}/ship")
-def mark_shipped(order_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
+def mark_shipped(order_id: int, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
     order = get_order_or_404(db, order_id)
     if not order.crypto_token:
         raise HTTPException(
@@ -627,7 +693,8 @@ def mark_shipped(order_id: int, db: Session = Depends(get_db)) -> dict[str, Any]
 
 
 @app.post("/api/cargo-webhook/simulate")
-def simulate_cargo_delay(payload: CargoDelayRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
+def simulate_cargo_delay(payload: CargoDelayRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
     order = get_order_or_404(db, payload.order_id)
     if order.status != OrderStatus.SHIPPED:
         raise HTTPException(
@@ -679,13 +746,25 @@ def simulate_cargo_delay(payload: CargoDelayRequest, db: Session = Depends(get_d
 
 @app.post("/api/tracking/lookup")
 def tracking_lookup(payload: TrackingLookupRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
-    order = get_order_or_404(db, payload.order_id)
-    if not verify_delivery_token(order, payload.crypto_token):
+    order: Order | None = None
+    if payload.order_code:
+        order = (
+            db.query(Order)
+            .options(joinedload(Order.product))
+            .filter(Order.public_order_code == payload.order_code)
+            .first()
+        )
+    if not order and payload.order_id:
+        order = get_order_or_404(db, payload.order_id)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sipariş bulunamadı.")
+
+    if not verify_customer_access(order, payload.crypto_token):
         log_event(
             db,
             order.id,
             "Geçersiz teslimat tokeni ile takip sorgusu engellendi.",
-            {"token_fingerprint": token_digest(payload.crypto_token)[:12]},
+            {"token_fingerprint": token_digest(payload.crypto_token)[:12] if payload.crypto_token else "none"},
         )
         db.commit()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Geçersiz teslimat tokeni.")
@@ -699,7 +778,7 @@ def tracking_lookup(payload: TrackingLookupRequest, db: Session = Depends(get_db
 @app.post("/api/delivery/confirm")
 def confirm_delivery(payload: DeliveryConfirmRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
     order = get_order_or_404(db, payload.order_id)
-    if not verify_delivery_token(order, payload.crypto_token):
+    if not verify_customer_access(order, payload.crypto_token):
         log_event(
             db,
             order.id,
@@ -750,7 +829,7 @@ def confirm_delivery(payload: DeliveryConfirmRequest, db: Session = Depends(get_
 @app.post("/api/return/request")
 def request_return(payload: ReturnRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
     order = get_order_or_404(db, payload.order_id)
-    if not verify_delivery_token(order, payload.crypto_token):
+    if not verify_customer_access(order, payload.crypto_token):
         log_event(
             db,
             order.id,
@@ -807,7 +886,7 @@ def request_return(payload: ReturnRequest, db: Session = Depends(get_db)) -> dic
 @app.post("/api/customer/messages")
 def customer_messages(payload: TrackingLookupRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
     order = get_order_or_404(db, payload.order_id)
-    if not verify_delivery_token(order, payload.crypto_token):
+    if not verify_customer_access(order, payload.crypto_token):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Geçersiz teslimat tokeni.")
     return {"messages": serialize_customer_messages(order.id, db)}
 
@@ -815,7 +894,7 @@ def customer_messages(payload: TrackingLookupRequest, db: Session = Depends(get_
 @app.post("/api/customer/message")
 def customer_message(payload: CustomerMessageRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
     order = get_order_or_404(db, payload.order_id)
-    if not verify_delivery_token(order, payload.crypto_token):
+    if not verify_customer_access(order, payload.crypto_token):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Geçersiz teslimat tokeni.")
 
     customer_event = log_event(
@@ -872,8 +951,10 @@ def customer_message(payload: CustomerMessageRequest, db: Session = Depends(get_
 def approve_customer_message(
     event_id: int,
     approval: AdminMessageApprovalRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    require_admin(request)
     event = (
         db.query(EventLog)
         .options(joinedload(EventLog.order))
@@ -908,7 +989,8 @@ def approve_customer_message(
 
 
 @app.post("/api/admin/orders/message")
-def admin_direct_message(payload: AdminDirectMessageRequest, db: Session = Depends(get_db)) -> dict[str, Any]:
+def admin_direct_message(payload: AdminDirectMessageRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
     order = get_order_or_404(db, payload.order_id)
     log_event(
         db,
@@ -916,5 +998,21 @@ def admin_direct_message(payload: AdminDirectMessageRequest, db: Session = Depen
         "Yetkili müşteriye doğrudan mesaj gönderdi.",
         {"role": "agent", "reply": payload.message, "intent": "admin_direct_message"},
     )
+    db.commit()
+    return dashboard_payload(db)
+
+
+@app.post("/api/products/{product_id}/stock")
+def update_stock(product_id: int, payload: StockUpdateRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ürün bulunamadı.")
+
+    new_quantity = product.stock_quantity + payload.quantity_change
+    if new_quantity < 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stok miktarı negatif olamaz.")
+
+    product.stock_quantity = new_quantity
     db.commit()
     return dashboard_payload(db)
